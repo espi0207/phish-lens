@@ -1,0 +1,275 @@
+// La parte de la página: leer el correo, analizarlo y pintar el resultado.
+//
+// Todo lo que viene del correo se mete como texto (textContent), nunca como HTML: el HTML de
+// un correo de phishing no debe interpretarse aquí bajo ningún concepto.
+
+import { analyze } from "./analyze.js";
+import { parseMessage } from "./mail.js";
+
+const MAX_SIZE = 15 * 1024 * 1024;
+const SEVERITY_LABEL = { alta: "Alta", media: "Media", baja: "Baja", info: "Info", ok: "Bien" };
+const $ = (id) => document.getElementById(id);
+
+function el(tag, attrs = {}, ...children) {
+  const node = document.createElement(tag);
+  for (const [key, value] of Object.entries(attrs)) {
+    if (key === "class") node.className = value;
+    else node.setAttribute(key, value);
+  }
+  for (const child of children.flat()) {
+    if (child !== null && child !== undefined && child !== "") {
+      node.append(child instanceof Node ? child : String(child));
+    }
+  }
+  return node;
+}
+
+function showError(text) {
+  $("error").textContent = text;
+  $("error").hidden = !text;
+}
+
+function formatSize(bytes) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+
+function formatDate(date) {
+  return date.toLocaleString("es-ES", { dateStyle: "medium", timeStyle: "medium" });
+}
+
+function renderVerdict(result) {
+  const card = $("verdict");
+  card.className = `card verdict ${result.verdict.level}`;
+  $("verdict-label").textContent = result.verdict.text;
+  $("verdict-subject").textContent = result.subject ? `«${result.subject}»` : "(sin asunto)";
+  $("gauge-fill").style.width = `${result.score}%`;
+  $("verdict-score").textContent =
+    `Puntuación de riesgo: ${result.score} de 100` +
+    (result.verdict.level === "limpio" ? ". Que no salga nada no garantiza que sea seguro." : "");
+}
+
+function renderFindings(findings) {
+  $("findings").replaceChildren(
+    ...findings.map((f) =>
+      el(
+        "li",
+        { class: `finding ${f.severity}` },
+        el("span", { class: `pill ${f.severity}` }, SEVERITY_LABEL[f.severity]),
+        el("div", {}, el("strong", {}, f.title), el("p", {}, f.detail)),
+      ),
+    ),
+  );
+  if (!findings.length) $("findings").append(el("li", { class: "muted" }, "Nada que destacar."));
+}
+
+function renderSender(result) {
+  const rows = [
+    ["Nombre visible", result.from.name || "(ninguno)"],
+    ["Dirección", result.from.address || "(vacía)"],
+    ["Responder a", result.replyTo.address],
+    ["Return-Path", result.returnPath.address],
+    ["Para", result.to.map((a) => a.address).join(", ")],
+    ["Fecha", result.date ? formatDate(result.date) : ""],
+  ].filter(([, value]) => value);
+  $("sender").replaceChildren(...rows.flatMap(([key, value]) => [el("dt", {}, key), el("dd", {}, value)]));
+
+  const badge = (name, value) => {
+    const state = value === "pass" ? "ok" : value === "fail" ? "alta" : value ? "media" : "info";
+    return el("span", { class: `badge ${state}` }, `${name}: ${value ?? "sin datos"}`);
+  };
+  $("auth").replaceChildren(badge("SPF", result.auth.spf), badge("DKIM", result.auth.dkim), badge("DMARC", result.auth.dmarc));
+}
+
+function renderHops(hops) {
+  if (!hops.length) {
+    $("hops").replaceChildren(el("li", { class: "muted" }, "El correo no trae cabeceras Received."));
+    return;
+  }
+  $("hops").replaceChildren(
+    ...hops.map((hop, i) => {
+      const previous = hops[i - 1]?.date;
+      const delay = hop.date && previous ? Math.round((hop.date - previous) / 1000) : null;
+      return el(
+        "li",
+        {},
+        el("strong", {}, hop.from || "(desconocido)"),
+        hop.ip ? el("span", { class: "mono" }, ` [${hop.ip}]`) : null,
+        el(
+          "span",
+          { class: "muted small block" },
+          hop.by ? `recibido por ${hop.by}` : "",
+          hop.date ? ` · ${formatDate(hop.date)}` : "",
+          delay !== null ? ` · ${delay < 0 ? "¡antes que el anterior!" : `+${delay} s`}` : "",
+        ),
+      );
+    }),
+  );
+}
+
+function renderLinks(links) {
+  if (!links.length) {
+    $("links").replaceChildren(el("p", { class: "muted" }, "No tiene enlaces."));
+    return;
+  }
+  const rows = links.map((link) =>
+    el(
+      "tr",
+      {},
+      el("td", {}, link.text || el("span", { class: "muted" }, "(la propia URL)")),
+      el("td", { class: "mono break" }, link.shown),
+      el(
+        "td",
+        {},
+        link.problems.length
+          ? link.problems.map((p) => el("span", { class: "pill alta" }, p))
+          : el("span", { class: "pill ok" }, "sin problemas"),
+      ),
+    ),
+  );
+  $("links").replaceChildren(
+    el(
+      "div",
+      { class: "table-wrap" },
+      el(
+        "table",
+        {},
+        el("thead", {}, el("tr", {}, el("th", {}, "Texto que se ve"), el("th", {}, "Adónde lleva de verdad"), el("th", {}, ""))),
+        el("tbody", {}, rows),
+      ),
+    ),
+  );
+}
+
+function renderAttachments(attachments) {
+  if (!attachments.length) {
+    $("attachments").replaceChildren(el("p", { class: "muted" }, "No tiene adjuntos."));
+    return;
+  }
+  $("attachments").replaceChildren(
+    el(
+      "ul",
+      { class: "attachments" },
+      attachments.map((a) =>
+        el(
+          "li",
+          {},
+          el("span", { class: "mono" }, a.name),
+          el("span", { class: "muted small" }, ` ${a.contentType}, ${formatSize(a.size)} `),
+          a.problems.map((p) => el("span", { class: `pill ${p === "comprimido" ? "baja" : "alta"}` }, p)),
+        ),
+      ),
+    ),
+  );
+}
+
+function show(input) {
+  showError("");
+  let result;
+  try {
+    const message = parseMessage(input);
+    if (!message.headers.list.length) {
+      showError("Eso no parece un correo: no encuentro ninguna cabecera (From, Subject, Received...).");
+      return;
+    }
+    result = analyze(message);
+  } catch (err) {
+    showError(`No he podido leer el correo: ${err.message}`);
+    return;
+  }
+  renderVerdict(result);
+  renderFindings(result.findings);
+  renderSender(result);
+  renderHops(result.hops);
+  renderLinks(result.links);
+  renderAttachments(result.attachments);
+  $("input").hidden = true;
+  $("result").hidden = false;
+  window.scrollTo({ top: 0 });
+}
+
+async function readFile(file) {
+  if (file.size > MAX_SIZE) {
+    showError(`El archivo ocupa ${formatSize(file.size)}; como mucho ${formatSize(MAX_SIZE)}.`);
+    return;
+  }
+  show(new Uint8Array(await file.arrayBuffer()));
+}
+
+async function loadSample(name) {
+  try {
+    const response = await fetch(`samples/${name}.eml`);
+    if (!response.ok) throw new Error(response.statusText);
+    show(new Uint8Array(await response.arrayBuffer()));
+    history.replaceState(null, "", `#ejemplo=${name}`);
+  } catch {
+    showError("No he podido cargar el ejemplo. Si has abierto el archivo directamente, sírvelo con un servidor (mira el README).");
+  }
+}
+
+function reset() {
+  $("result").hidden = true;
+  $("input").hidden = false;
+  $("raw").value = "";
+  $("file").value = "";
+  history.replaceState(null, "", location.pathname);
+}
+
+$("analyze").addEventListener("click", () => {
+  const text = $("raw").value;
+  if (!text.trim()) {
+    showError("Pega el código fuente del correo o arrastra el archivo .eml.");
+    return;
+  }
+  show(text);
+});
+$("file").addEventListener("change", (e) => e.target.files[0] && readFile(e.target.files[0]));
+$("again").addEventListener("click", reset);
+for (const button of document.querySelectorAll("[data-sample]")) {
+  button.addEventListener("click", () => loadSample(button.dataset.sample));
+}
+
+const drop = $("drop");
+for (const type of ["dragenter", "dragover"]) {
+  drop.addEventListener(type, (e) => {
+    e.preventDefault();
+    drop.classList.add("over");
+  });
+}
+for (const type of ["dragleave", "drop"]) drop.addEventListener(type, () => drop.classList.remove("over"));
+drop.addEventListener("drop", (e) => {
+  e.preventDefault();
+  const file = e.dataTransfer.files[0];
+  if (file) readFile(file);
+});
+
+// Instalada en Chrome o Edge en el ordenador, un .eml abierto con "Abrir con > phish-lens"
+// llega por aquí (lo declara file_handlers en el manifiesto).
+if ("launchQueue" in window) {
+  window.launchQueue.setConsumer(async ({ files }) => {
+    if (files?.length) readFile(await files[0].getFile());
+  });
+}
+
+// Chrome y Edge avisan cuando la página se puede instalar como una app: se ofrece con un botón.
+let installPrompt = null;
+window.addEventListener("beforeinstallprompt", (event) => {
+  event.preventDefault();
+  installPrompt = event;
+  $("install").hidden = false;
+});
+$("install").addEventListener("click", () => {
+  $("install").hidden = true;
+  installPrompt?.prompt();
+  installPrompt = null;
+});
+
+// Para que funcione sin conexión y se pueda instalar.
+if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
+  navigator.serviceWorker.register("sw.js").catch(() => {});
+}
+
+// #ejemplo=fraude-ceo abre directamente un ejemplo (útil para enseñárselo a alguien).
+const sample = new URLSearchParams(location.hash.slice(1)).get("ejemplo");
+if (sample && /^[a-z0-9-]+$/.test(sample)) loadSample(sample);

@@ -1,0 +1,34 @@
+Authentication-Results: mx.empresa-ejemplo.example;
+ spf=pass smtp.mailfrom=laura.martin@ernpresa-ejemplo.example;
+ dkim=pass header.d=ernpresa-ejemplo.example header.s=mail;
+ dmarc=pass (p=REJECT) header.from=ernpresa-ejemplo.example
+Received: from mail.ernpresa-ejemplo.example (mail.ernpresa-ejemplo.example [198.51.100.140])
+ by mx.empresa-ejemplo.example with ESMTPS id 91AB; Tue, 22 Sep 2026 18:42:10 +0200
+Return-Path: <laura.martin@ernpresa-ejemplo.example>
+From: Laura =?utf-8?q?Mart=C3=ADn_=28Direcci=C3=B3n_General=29?=
+ <laura.martin@ernpresa-ejemplo.example>
+To: "Pablo Ruiz" <pablo.ruiz@empresa-ejemplo.example>
+Subject: Pago urgente
+Date: Tue, 22 Sep 2026 18:42:05 +0200
+Message-ID: <a8f3c2@ernpresa-ejemplo.example>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+MIME-Version: 1.0
+
+Pablo:
+
+Necesito que hagas hoy mismo una transferencia a un proveedor nuevo por la co=
+mpra que estamos cerrando. Es confidencial, de momento no lo comentes con nad=
+ie del departamento.
+
+Estoy en una reuni=C3=B3n con el consejo y no puedo hablar por tel=C3=A9fono,=
+ as=C3=AD que escr=C3=ADbeme solo por aqu=C3=AD.
+
+Importe: 18.450,00 EUR
+Beneficiario: Consultor=C3=ADa Atlas Global
+IBAN: ES00 0000 0000 0000 0000 0000
+
+Conf=C3=ADrmame cuando est=C3=A9 hecha. Gracias.
+
+Laura Mart=C3=ADn
+Directora General

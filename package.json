@@ -1,0 +1,15 @@
+{
+  "name": "phish-lens",
+  "version": "1.0.0",
+  "description": "Analiza un correo sospechoso en el navegador y explica si parece phishing",
+  "type": "module",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "test": "node --test",
+    "start": "python3 -m http.server 8000"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

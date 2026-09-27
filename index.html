@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Ni scripts de fuera, ni formularios, ni conexiones: el correo no puede salir de aquí. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="description" content="Analiza un correo sospechoso en tu navegador y explica si parece phishing. El correo no sale de tu equipo.">
+<meta name="theme-color" content="#2f6fed">
+<title>phish-lens: ¿es phishing este correo?</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="css/style.css">
+<script type="module" src="js/app.js"></script>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div class="title-row">
+      <h1><span class="lens" aria-hidden="true"></span>phish-lens</h1>
+      <button id="install" type="button" hidden>Instalar como app</button>
+    </div>
+    <p class="tagline">Pega un correo sospechoso y te explico si parece phishing y por qué.</p>
+  </div>
+</header>
+
+<main class="wrap">
+  <section id="input" class="card">
+    <label id="drop" class="drop" for="file">
+      <input id="file" type="file" accept=".eml,message/rfc822,.txt">
+      <strong>Arrastra aquí el correo (.eml)</strong>
+      <span>o pulsa para elegir el archivo</span>
+    </label>
+
+    <p class="or">o pega su código fuente</p>
+    <textarea id="raw" rows="7" spellcheck="false" placeholder="Received: from ...&#10;From: ...&#10;Subject: ...&#10;&#10;..."></textarea>
+
+    <div class="actions">
+      <button id="analyze" class="primary" type="button">Analizar</button>
+      <span class="privacy">Se analiza en tu navegador. El correo no se envía a ningún sitio.</span>
+    </div>
+
+    <div class="samples">
+      <span>¿No tienes ninguno a mano? Prueba con un ejemplo:</span>
+      <button type="button" data-sample="correos-paquete">Paquete retenido</button>
+      <button type="button" data-sample="fraude-ceo">Fraude del CEO</button>
+      <button type="button" data-sample="factura-adjunto">Factura con adjunto</button>
+      <button type="button" data-sample="pedido-legitimo">Correo legítimo</button>
+    </div>
+
+    <details class="help">
+      <summary>¿Cómo saco el .eml o el código fuente de un correo?</summary>
+      <ul>
+        <li><b>Gmail:</b> abre el correo, menú <i>⋮</i> y <i>Descargar mensaje</i> (o <i>Mostrar original</i> para copiarlo).</li>
+        <li><b>Outlook en la web:</b> menú <i>…</i>, <i>Ver</i> y <i>Ver origen del mensaje</i>. Copia todo y pégalo aquí.</li>
+        <li><b>Thunderbird:</b> <i>Ctrl+U</i> enseña el código fuente; también <i>Archivo &gt; Guardar como</i>.</li>
+        <li><b>Mail de Apple:</b> <i>Visualización &gt; Mensaje &gt; Código fuente original</i>.</li>
+      </ul>
+      <p>Solo con el texto del mensaje no basta: lo importante está en las cabeceras (quién lo envía de verdad, por qué servidores ha pasado, si ha superado SPF, DKIM y DMARC).</p>
+    </details>
+    <p id="error" class="error" hidden></p>
+  </section>
+
+  <section id="result" hidden>
+    <div id="verdict" class="card verdict">
+      <div class="verdict-text">
+        <p id="verdict-label" class="verdict-label"></p>
+        <p id="verdict-subject" class="muted"></p>
+      </div>
+      <div class="gauge" aria-hidden="true"><div id="gauge-fill" class="gauge-fill"></div></div>
+      <p id="verdict-score" class="muted small"></p>
+    </div>
+
+    <div class="card">
+      <h2>Lo que he encontrado</h2>
+      <ul id="findings" class="findings"></ul>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h2>Remitente</h2>
+        <dl id="sender" class="facts"></dl>
+        <div id="auth" class="badges"></div>
+      </div>
+      <div class="card">
+        <h2>Recorrido</h2>
+        <p class="muted small">Servidores por los que ha pasado, del primero al último. Las cabeceras de más abajo las puede inventar quien envía.</p>
+        <ol id="hops" class="hops"></ol>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Enlaces</h2>
+      <p class="muted small">No se pueden pinchar a propósito: <code>hxxp</code> y <code>[.]</code> son para que no se abran sin querer.</p>
+      <div id="links"></div>
+    </div>
+
+    <div class="card">
+      <h2>Adjuntos</h2>
+      <div id="attachments"></div>
+    </div>
+
+    <button id="again" type="button">Analizar otro correo</button>
+  </section>
+</main>
+
+<footer class="wrap footer">
+  <p>Es una ayuda, no un veredicto: un correo puede ser peligroso aunque aquí no salga nada. Ante la duda, no pinches y entra a la web a mano.</p>
+  <p><a href="https://github.com/espi0207/phish-lens">Código en GitHub</a></p>
+</footer>
+</body>
+</html>

@@ -1,0 +1,47 @@
+Authentication-Results: mx.tudominio.example;
+ spf=none smtp.mailfrom=facturacion@proveedor-servicios.example;
+ dkim=none;
+ dmarc=none header.from=proveedor-servicios.example
+Received: from smtp.proveedor-servicios.example (unknown [203.0.113.200])
+ by mx.tudominio.example with SMTP id 55CD; Thu, 24 Sep 2026 11:02:44 +0200
+From:
+ =?utf-8?q?Administraci=C3=B3n?= <facturacion@proveedor-servicios.example>
+To: contabilidad@tudominio.example
+Subject: Factura pendiente de pago 2026-0917
+Date: Thu, 24 Sep 2026 11:02:40 +0200
+Message-ID: <f2026-0917@proveedor-servicios.example>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="===============0563665506263324385=="
+
+--===============0563665506263324385==
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+
+Buenos d=C3=ADas:
+
+Adjuntamos la factura pendiente de pago correspondiente al mes de septiembre.
+Para ver el documento es necesario introducir su usuario y contrase=C3=B1a de=
+l correo.
+
+Un saludo,
+Administraci=C3=B3n
+
+--===============0563665506263324385==
+Content-Type: text/html
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="Factura_2026-0917.pdf.html"
+MIME-Version: 1.0
+
+PGh0bWw+PGJvZHk+PGZvcm0gYWN0aW9uPSdodHRwczovL3JlY29naWRhLWRhdG9zLmV4YW1wbGUv
+bG9naW4nPi4uLjwvZm9ybT48L2JvZHk+PC9odG1sPg==
+
+--===============0563665506263324385==
+Content-Type: application/zip
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="Albaran_septiembre.zip"
+MIME-Version: 1.0
+
+UEsDBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAA==
+
+--===============0563665506263324385==--

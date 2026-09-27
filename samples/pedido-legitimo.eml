@@ -1,0 +1,45 @@
+Authentication-Results: mx.tudominio.example;
+ spf=pass smtp.mailfrom=envios@mail.tiendaretro.example;
+ dkim=pass header.d=tiendaretro.example header.s=s1;
+ dmarc=pass (p=QUARANTINE) header.from=tiendaretro.example
+Received: from mail.tiendaretro.example (mail.tiendaretro.example [198.51.100.25])
+ by mx.tudominio.example with ESMTPS id 12EF; Sat, 26 Sep 2026 17:30:12 +0200
+Return-Path: <envios@mail.tiendaretro.example>
+From: "Tienda Retro" <envios@tiendaretro.example>
+To: lucia.fernandez@tudominio.example
+Subject: Tu pedido 48213 ya =?utf-8?q?est=C3=A1?= en camino
+Date: Sat, 26 Sep 2026 17:30:10 +0200
+Message-ID: <pedido-48213@tiendaretro.example>
+List-Unsubscribe: <https://www.tiendaretro.example/baja?u=48213>
+MIME-Version: 1.0
+Content-Type: multipart/alternative;
+ boundary="===============0836977254093097974=="
+
+--===============0836977254093097974==
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+
+Hola, Luc=C3=ADa:
+
+Tu pedido 48213 (Super Nintendo + 2 mandos) ha salido hoy de nuestro almac=C3=
+=A9n.
+Puedes seguirlo en https://www.tiendaretro.example/pedidos/48213
+
+Gracias por comprar en Tienda Retro.
+
+--===============0836977254093097974==
+Content-Type: text/html; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+MIME-Version: 1.0
+
+<html><body>
+<p>Hola, Luc=C3=ADa:</p>
+<p>Tu pedido <b>48213</b> (Super Nintendo + 2 mandos) ha salido hoy de nuestr=
+o almac=C3=A9n.</p>
+<p><a href=3D"https://www.tiendaretro.example/pedidos/48213">Ver el estado de=
+l pedido</a></p>
+<p>Gracias por comprar en <a href=3D"https://www.tiendaretro.example/">www.ti=
+endaretro.example</a>.</p>
+</body></html>
+
+--===============0836977254093097974==--

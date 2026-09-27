@@ -1,0 +1,55 @@
+Authentication-Results: mx.tudominio.example;
+ spf=softfail (el dominio correos-envios.example no autoriza a 203.0.113.77) smtp.mailfrom=bounce-7731@mailer.envios-rapidos.example;
+ dkim=none;
+ dmarc=fail (p=NONE) header.from=correos-envios.example
+Received: from mx1.filtro-correo.example (mx1.filtro-correo.example [192.0.2.10])
+ by mx.tudominio.example with ESMTPS id 4F2A1; Fri, 25 Sep 2026 09:14:07 +0200
+Received: from vps-2231.hosting-barato.example (vps-2231.hosting-barato.example [203.0.113.77])
+ by mx1.filtro-correo.example with SMTP id x7K2; Fri, 25 Sep 2026 09:14:03 +0200
+Return-Path: <bounce-7731@mailer.envios-rapidos.example>
+From: Correos =?utf-8?q?Espa=C3=B1a?= <notificaciones@correos-envios.example>
+Reply-To: atencion@soporte-paquetes.example
+To: lucia.fernandez@tudominio.example
+Subject: Su paquete retenido: =?utf-8?q?acci=C3=B3n?= requerida
+Date: Fri, 25 Sep 2026 09:14:01 +0200
+Message-ID: <20260925071401.7731@correos-envios.example>
+MIME-Version: 1.0
+Content-Type: multipart/alternative;
+ boundary="===============0016925262385082686=="
+
+--===============0016925262385082686==
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+
+Estimado cliente:
+
+Su paquete retenido en nuestras instalaciones tiene tasas de aduana pendiente=
+s (1,99 EUR).
+Si no realiza el pago en las pr=C3=B3ximas 48 horas, el env=C3=ADo ser=C3=A1 =
+devuelto al remitente.
+
+Haga clic aqu=C3=AD para pagar: https://bit.ly/3xYz7Ab
+
+Atentamente,
+Correos
+
+--===============0016925262385082686==
+Content-Type: text/html; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+MIME-Version: 1.0
+
+<html><body style=3D"font-family:Arial,sans-serif">
+<p><img src=3D"https://correos-es.paquete-retenido.example/logo.png" alt=3D"C=
+orreos"></p>
+<p>Estimado cliente:</p>
+<p>Su <b>paquete retenido</b> en nuestras instalaciones tiene <b>tasas de adu=
+ana</b> pendientes (1,99&nbsp;&euro;).
+Si no realiza el pago en las pr&oacute;ximas <b>48 horas</b>, el env&iacute;o=
+ ser&aacute; devuelto al remitente.</p>
+<p>Puede consultar el estado en <a href=3D"http://correos-es.paquete-retenido=
+.example/pago?ref=3DES7731">https://www.correos.es/seguimiento</a></p>
+<p><a href=3D"https://bit.ly/3xYz7Ab">Haga clic aqu&iacute; para pagar</a></p>
+<p>Atentamente,<br>Correos</p>
+</body></html>
+
+--===============0016925262385082686==--

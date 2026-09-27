@@ -1,0 +1,23 @@
+{
+  "name": "phish-lens: ¿es phishing este correo?",
+  "short_name": "phish-lens",
+  "description": "Analiza un correo sospechoso y explica si parece phishing. El correo no sale de tu equipo.",
+  "lang": "es",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2f6fed",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ],
+  "file_handlers": [
+    {
+      "action": "./",
+      "accept": { "message/rfc822": [".eml"] },
+      "launch_type": "single-client"
+    }
+  ]
+}
