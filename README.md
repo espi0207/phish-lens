@@ -1,18 +1,51 @@
 # phish-lens
 
 [![CI](https://github.com/espi0207/phish-lens/actions/workflows/ci.yml/badge.svg)](https://github.com/espi0207/phish-lens/actions/workflows/ci.yml)
+[![Extensión](https://github.com/espi0207/phish-lens/actions/workflows/extension.yml/badge.svg)](https://github.com/espi0207/phish-lens/actions/workflows/extension.yml)
 
-**Pruébalo aquí: https://espi0207.github.io/phish-lens/**
+**Extensión para Chrome y Edge: [descárgala](https://github.com/espi0207/phish-lens/releases/latest/download/phish-lens-extension.zip)** · **O úsalo en la web: https://espi0207.github.io/phish-lens/**
 
-Una página web a la que le pasas un correo sospechoso (el archivo `.eml` o su código
-fuente) y te dice si parece phishing y, sobre todo, **por qué**: quién lo envía de
-verdad, si ha pasado SPF, DKIM y DMARC, si algún dominio imita a otro, si los enlaces
-llevan a donde dicen y si los adjuntos esconden algo.
+Le pasas un correo sospechoso (o un enlace) y te dice si parece phishing y, sobre todo,
+**por qué**: quién lo envía de verdad, si ha pasado SPF, DKIM y DMARC, si algún dominio
+imita a otro, si los enlaces llevan a donde dicen y si los adjuntos esconden algo.
 
 El correo **no sale de tu navegador**: no hay servidor, todo se analiza con JavaScript
 en tu equipo. Es HTML, CSS y JavaScript sin librerías ni compilación.
 
 ![Análisis de un correo falso de Correos](docs/captura.png)
+
+## La extensión
+
+Lo más cómodo es tenerlo en el navegador:
+
+- **En Gmail**, abre el correo, menú *⋮* > *Mostrar original*, y el veredicto sale
+  arriba del todo, sin hacer nada más:
+
+  ![El aviso de phish-lens en la página de Mostrar original de Gmail](docs/extension-aviso.png)
+
+- **Clic derecho en cualquier enlace** (en un correo, en WhatsApp Web, en una web
+  cualquiera) > *Comprobar este enlace con phish-lens*. Se abre una ventanita que dice
+  si el enlace es una trampa, sin llegar a abrirlo:
+
+  <img src="docs/extension-enlace.png" alt="La ventana de comprobar un enlace" width="420">
+
+- **El icono** de la barra abre el analizador completo, para arrastrar un `.eml` o pegar
+  un correo de Outlook, Thunderbird o donde sea.
+
+Pide los permisos justos: el menú del clic derecho, guardar el último correo mientras el
+navegador está abierto (para el botón *Ver el análisis completo*) y entrar en
+`mail.google.com` para leer la página de *Mostrar original*. No tiene permiso para ver
+el resto de webs ni se conecta a ningún sitio.
+
+### Instalarla
+
+Todavía no está en la Chrome Web Store, así que de momento se instala a mano:
+
+1. Descarga [phish-lens-extension.zip](https://github.com/espi0207/phish-lens/releases/latest/download/phish-lens-extension.zip)
+   y descomprímelo en una carpeta que no vayas a borrar.
+2. Abre `chrome://extensions` (en Edge, `edge://extensions`) y activa el **Modo de
+   desarrollador**.
+3. Pulsa **Cargar descomprimida** y elige esa carpeta.
 
 ## Instalarla como app
 
@@ -121,6 +154,12 @@ Algunas decisiones:
   España) y el "dominio registrado" es una aproximación sin la Public Suffix List.
 - Que no salga nada no quiere decir que el correo sea seguro. Un correo bien hecho desde
   una cuenta robada puede pasar todas estas comprobaciones.
+- La extensión solo pone el aviso sola en Gmail. En Outlook, Yahoo y los demás hay que
+  copiar el código fuente y pegarlo en el analizador (el icono de la extensión).
+- Al comprobar un enlace suelto solo se mira la dirección: no se abre ni se siguen sus
+  redirecciones. De un enlace acortado (bit.ly y compañía) no se puede saber adónde lleva.
+- La extensión es para Chrome, Edge y los navegadores basados en Chromium. Para Firefox
+  habría que adaptarla.
 
 ## Desarrollo
 
@@ -144,6 +183,31 @@ Lo que la hace instalable son tres archivos: `manifest.webmanifest` (nombre, ico
 `file_handlers`, que es lo que la pone en *Abrir con* para los `.eml`), `sw.js` (guarda
 la página para usarla sin conexión) y los iconos de `icons/`. Si se añade un archivo a
 la página, hay que meterlo en la lista de `sw.js`; hay una prueba que lo vigila.
+
+### La extensión
+
+```bash
+npm run build:extension     # deja la extensión en dist/extension y el .zip en dist/
+```
+
+La extensión es la misma página (`index.html`, `css/`, `js/`) más lo que va en
+`extension/`, con la misma estructura de carpetas, así que no hay código repetido:
+
+```text
+extension/
+├── manifest.json   permisos, el script de Gmail y la parte de fondo (Manifest V3)
+├── background.js   el icono, el menú del clic derecho y el análisis de los correos de Gmail
+└── gmail.js        lee el correo de "Mostrar original" y pone el aviso encima
+```
+
+`gmail.js` no depende de cómo llama Gmail a sus elementos, que cambia sin avisar: coge el
+bloque de texto más largo de la página que empieza con cabeceras de correo. El aviso va
+en un *shadow root* para que los estilos de Gmail no lo toquen, y todo se pinta con
+`textContent`, como en la página.
+
+El `.zip` lo hace `scripts/build-extension.mjs` sin ninguna dependencia (el formato ZIP a
+mano, con `zlib` de Node para comprimir). Con cada cambio lo monta GitHub Actions; para
+publicarlo en Releases, *Actions > Extensión > Run workflow* con *Publicar* marcado.
 
 ## Licencia
 

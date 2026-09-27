@@ -304,19 +304,50 @@ export function analyze(message, now = new Date()) {
     add("baja", "La fecha del correo está en el futuro", "La cabecera Date la pone quien envía: puede ser cualquier cosa.");
   }
 
-  const order = { alta: 0, media: 1, baja: 2, info: 3, ok: 4 };
-  findings.sort((a, b) => order[a.severity] - order[b.severity]);
-  const score = Math.min(100, findings.reduce((sum, f) => sum + WEIGHT[f.severity], 0));
-  const verdict =
-    score >= 50
-      ? { level: "peligro", text: "Muy probablemente es phishing" }
-      : score >= 20
-        ? { level: "sospechoso", text: "Sospechoso: revísalo con cuidado" }
-        : { level: "limpio", text: "No veo señales claras de phishing" };
-
+  const { score, verdict } = rate(findings, {
+    peligro: "Muy probablemente es phishing",
+    sospechoso: "Sospechoso: revísalo con cuidado",
+    limpio: "No veo señales claras de phishing",
+  });
   return {
     from, replyTo, returnPath, to, subject,
     date: date && !isNaN(date) ? date : null,
     auth, hops, links, attachments, findings, score, verdict,
   };
+}
+
+/** Ordena los hallazgos (los graves primero) y saca la puntuación y el veredicto. */
+function rate(findings, texts, scale = 1) {
+  const order = { alta: 0, media: 1, baja: 2, info: 3, ok: 4 };
+  findings.sort((a, b) => order[a.severity] - order[b.severity]);
+  const score = Math.min(100, Math.round(scale * findings.reduce((sum, f) => sum + WEIGHT[f.severity], 0)));
+  const level = score >= 50 ? "peligro" : score >= 20 ? "sospechoso" : "limpio";
+  return { score, verdict: { level, text: texts[level] } };
+}
+
+/**
+ * Un enlace suelto, sin el correo alrededor: el del clic derecho de la extensión o el que
+ * alguien pega en la página. Pasa por las mismas comprobaciones que los enlaces de un correo.
+ */
+export function analyzeLink(href) {
+  const findings = [];
+  const add = (severity, title, detail) => findings.push({ severity, title, detail });
+  const [link] = checkLinks([{ href: String(href).trim(), text: "" }], [], add);
+  if (!link) return null; // no es una URL
+  if (link.problems.includes("sin HTTPS")) {
+    add("baja", "Sin HTTPS", `${link.shown}: lo que escribas en esa página viaja sin cifrar.`);
+  }
+  // En un correo las señales se van sumando; en un enlace suelto, una sola grave (un dominio
+  // que imita a otro, una IP...) ya basta. Con esta escala una "alta" llega a peligro (50) y
+  // una "media" a sospechoso (20).
+  const { score, verdict } = rate(
+    findings,
+    {
+      peligro: "Muy probablemente es un enlace trampa",
+      sospechoso: "Sospechoso: mejor no lo abras",
+      limpio: "No veo señales claras de engaño",
+    },
+    5 / 3,
+  );
+  return { link, findings, score, verdict };
 }

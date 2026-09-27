@@ -3,7 +3,7 @@
 // Todo lo que viene del correo se mete como texto (textContent), nunca como HTML: el HTML de
 // un correo de phishing no debe interpretarse aquí bajo ningún concepto.
 
-import { analyze } from "./analyze.js";
+import { analyze, analyzeLink } from "./analyze.js";
 import { parseMessage } from "./mail.js";
 
 const MAX_SIZE = 15 * 1024 * 1024;
@@ -184,6 +184,26 @@ function show(input) {
   renderHops(result.hops);
   renderLinks(result.links);
   renderAttachments(result.attachments);
+  showResult(true);
+}
+
+/** Un enlace suelto: el mismo resultado, sin las partes que solo tienen sentido en un correo. */
+function showLink(href) {
+  showError("");
+  const result = analyzeLink(href);
+  if (!result) {
+    showError("Eso no parece un enlace. Tiene que empezar por http:// o https://");
+    return;
+  }
+  renderVerdict({ ...result, subject: null });
+  $("verdict-subject").textContent = result.link.shown;
+  renderFindings(result.findings);
+  renderLinks([result.link]);
+  showResult(false);
+}
+
+function showResult(isMail) {
+  for (const section of document.querySelectorAll(".mail-only")) section.hidden = !isMail;
   $("input").hidden = true;
   $("result").hidden = false;
   window.scrollTo({ top: 0 });
@@ -213,6 +233,7 @@ function reset() {
   $("input").hidden = false;
   $("raw").value = "";
   $("file").value = "";
+  $("link").value = "";
   history.replaceState(null, "", location.pathname);
 }
 
@@ -225,6 +246,14 @@ $("analyze").addEventListener("click", () => {
   show(text);
 });
 $("file").addEventListener("change", (e) => e.target.files[0] && readFile(e.target.files[0]));
+$("link-form").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const href = $("link").value.trim();
+  if (!href) return;
+  // Mucha gente pega el enlace sin el https:// delante (así sale en los SMS).
+  showLink(/^[a-z][a-z0-9+.-]*:/i.test(href) ? href : `https://${href}`);
+  history.replaceState(null, "", `#enlace=${encodeURIComponent($("link").value.trim())}`);
+});
 $("again").addEventListener("click", reset);
 for (const button of document.querySelectorAll("[data-sample]")) {
   button.addEventListener("click", () => loadSample(button.dataset.sample));
@@ -268,6 +297,21 @@ $("install").addEventListener("click", () => {
 // Para que funcione sin conexión y se pueda instalar.
 if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
   navigator.serviceWorker.register("sw.js").catch(() => {});
+}
+
+// Lo que llega en la dirección: #ejemplo=fraude-ceo abre un ejemplo, #enlace=... comprueba
+// un enlace (así lo abre el clic derecho de la extensión) y #correo=... es un correo que la
+// extensión ha dejado guardado al pulsar "Ver el análisis completo" en Gmail.
+const params = new URLSearchParams(location.hash.slice(1));
+if (params.has("enlace")) {
+  $("link").value = params.get("enlace");
+  showLink(params.get("enlace"));
+} else if (params.has("correo") && globalThis.chrome?.storage?.session) {
+  const key = params.get("correo");
+  chrome.storage.session.get(key).then((saved) => {
+    if (saved[key]) show(saved[key]);
+    else showError("Ese correo ya no está guardado: vuelve a abrirlo desde Gmail.");
+  });
 }
 
 // #ejemplo=fraude-ceo abre directamente un ejemplo (útil para enseñárselo a alguien).

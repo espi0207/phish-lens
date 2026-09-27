@@ -44,6 +44,12 @@
   box-sizing: border-box;
 }
 
+/* Sin esto, una clase con display (como .grid) gana al atributo hidden y la sección se ve
+   aunque esté oculta. */
+[hidden] {
+  display: none !important;
+}
+
 body {
   margin: 0;
   background: var(--bg);
@@ -468,4 +474,24 @@ code {
 
 .footer a {
   color: var(--accent);
+}
+
+.link-check {
+  margin-top: 18px;
+}
+
+.link-check label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--muted);
+}
+
+.link-row {
+  display: flex;
+  gap: 8px;
+}
+
+.link-row input {
+  flex: 1;
+  min-width: 0;
 }

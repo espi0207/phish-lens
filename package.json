@@ -7,7 +7,8 @@
   "license": "MIT",
   "scripts": {
     "test": "node --test",
-    "start": "python3 -m http.server 8000"
+    "start": "python3 -m http.server 8000",
+    "build:extension": "node scripts/build-extension.mjs"
   },
   "engines": {
     "node": ">=20"

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 import { test } from "node:test";
 
-import { analyze, parseAuthResults, parseReceived } from "../js/analyze.js";
+import { analyze, analyzeLink, parseAuthResults, parseReceived } from "../js/analyze.js";
 import { parseMessage } from "../js/mail.js";
 
 const NOW = new Date("2026-09-27T12:00:00Z");
@@ -132,4 +132,22 @@ test("nada de innerHTML ni parecidos en todo el proyecto", () => {
     const code = readFileSync(new URL(`../js/${file}`, import.meta.url), "utf8");
     assert.doesNotMatch(code, /innerHTML|outerHTML|insertAdjacentHTML|document\.write|eval\(|new Function/, file);
   }
+});
+
+test("un enlace suelto: una sola señal grave ya es peligro", () => {
+  const check = (url) => analyzeLink(url);
+  assert.equal(check("https://www.bbva.es/personas.html").verdict.level, "limpio");
+  for (const url of [
+    "https://correos-es.info/paquete?id=123", // el nombre de una marca en otro dominio
+    "https://xn--pypal-4ve.com/signin", // punycode que imita a paypal
+    "http://192.168.10.5/correos/pago", // una IP
+    "https://www.google.com@evil.example/", // el truco de la @
+  ]) {
+    assert.equal(check(url).verdict.level, "peligro", url);
+  }
+  assert.equal(check("https://bit.ly/3xYz").verdict.level, "sospechoso"); // no se sabe adónde lleva
+  const http = check("http://example.com");
+  assert.equal(http.verdict.level, "limpio");
+  assert.deepEqual(http.findings.map((f) => f.title), ["Sin HTTPS"]);
+  assert.equal(check("hola"), null);
 });

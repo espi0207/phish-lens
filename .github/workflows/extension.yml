@@ -1,0 +1,44 @@
+name: Extensión
+
+# Monta la extensión de Chrome y Edge (dist/phish-lens-extension.zip) con cada cambio y la
+# deja como artefacto del workflow. Para publicarla en Releases: Actions > Extensión > Run
+# workflow con "Publicar" marcado, que crea la etiqueta v + la versión de package.json.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      publicar:
+        description: Publicar en Releases (crea la etiqueta v + la versión de package.json)
+        type: boolean
+        default: false
+
+permissions:
+  contents: write # para crear la release
+
+jobs:
+  zip:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          package-manager-cache: false # no hay dependencias que guardar
+      - name: Montar la extensión
+        run: npm run build:extension
+      - uses: actions/upload-artifact@v7
+        with:
+          name: phish-lens-extension
+          path: dist/phish-lens-extension.zip
+      - name: Publicar en Releases
+        if: inputs.publicar
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="v$(node -p "require('./package.json').version")"
+          # Si esa versión ya estaba publicada, se sustituye (con su etiqueta) por la de este commit.
+          gh release delete "$tag" --cleanup-tag --yes 2>/dev/null || true
+          gh release create "$tag" dist/phish-lens-extension.zip --target "$GITHUB_SHA" --title "phish-lens $tag" --notes-file .github/release-notes.md

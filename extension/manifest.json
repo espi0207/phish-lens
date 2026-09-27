@@ -1,0 +1,33 @@
+{
+  "manifest_version": 3,
+  "name": "phish-lens",
+  "version": "0.0.0",
+  "description": "¿Es phishing este correo o este enlace? Te explica por qué, sin que nada salga de tu navegador.",
+  "homepage_url": "https://github.com/espi0207/phish-lens",
+  "minimum_chrome_version": "116",
+  "icons": {
+    "16": "extension/icons/icon-16.png",
+    "32": "extension/icons/icon-32.png",
+    "48": "extension/icons/icon-48.png",
+    "128": "extension/icons/icon-128.png"
+  },
+  "action": {
+    "default_title": "Analizar un correo con phish-lens",
+    "default_icon": {
+      "16": "extension/icons/icon-16.png",
+      "32": "extension/icons/icon-32.png"
+    }
+  },
+  "background": {
+    "service_worker": "extension/background.js",
+    "type": "module"
+  },
+  "permissions": ["contextMenus", "storage"],
+  "content_scripts": [
+    {
+      "matches": ["https://mail.google.com/mail/*"],
+      "js": ["extension/gmail.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
