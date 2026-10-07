@@ -8,6 +8,8 @@ Plan: `C:\Users\Guillem\.claude\plans\recursive-pondering-cookie.md`
 
 - Fase 3: `js/qr.js` + jsQR 1.4.0 vendorizado (`js/vendor/`, integridad npm verificada, hash fijado en test), `mail.js` guarda las imágenes (tope 10 de 5 MB), `scripts/png.mjs` (lector de PNG para Node: pruebas y CLI), muestra `qr-paypal`, fixtures en `tests/fixtures/`.
 
+- Fase 4: `js/batch.js` (resumen, CSV con protección contra fórmulas, Markdown), `scripts/analyze-folder.mjs` (CLI recursiva, --json/--csv/--md/--out, --completo, --acortadores, salida 1 si hay peligro), `js/folder.js` + vista de lote en la página (selector y arrastrar carpeta), `npm run analyze:folder`.
+
 ## Desviaciones del plan (Fase 2)
 - Listas negras: Spamhaus DBL devuelve `127.255.255.254` (resolutor público bloqueado) y SURBL da SERVFAIL por Cloudflare; se usa `security.cloudflare-dns.com` (0.0.0.0 = bloqueado, comprobado con `malware.testcategory.com`).
 - La lista negra se consulta por host completo, no por dominio registrable.
@@ -19,6 +21,6 @@ Plan: `C:\Users\Guillem\.claude\plans\recursive-pondering-cookie.md`
 - Nada.
 
 ## Pendiente
-- Fase 4: análisis de una carpeta de `.eml` (CLI y vista web).
 - Fase 3: el aviso de Gmail (background) no busca QR; las imágenes remotas y los PDF no se miran.
+- Fase 4: sin probar a mano arrastrar una carpeta (webkitGetAsEntry); el selector sí. En la web el lote es siempre local (sin red); el modo completo en lote solo existe en la CLI.
 - Sin probar en navegador real: seguir acortadores en la extensión (`chrome.permissions` y la redirección entre orígenes).

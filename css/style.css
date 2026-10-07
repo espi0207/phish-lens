@@ -204,6 +204,28 @@ button.primary {
   font-size: 0.9rem;
 }
 
+.name-btn {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  border-radius: 8px;
+  text-align: left;
+  word-break: break-all;
+}
+
+@media (max-width: 640px) {
+  .wide-only {
+    display: none;
+  }
+}
+
+.folder-row {
+  display: flex;
+  align-items: center;
+  gap: 10px 14px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
 .mode {
   border: 1px solid var(--border);
   border-radius: 10px;

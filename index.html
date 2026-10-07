@@ -33,6 +33,12 @@
       <span>o pulsa para elegir el archivo</span>
     </label>
 
+    <div class="folder-row">
+      <button id="folder-btn" type="button">Analizar una carpeta de .eml</button>
+      <input id="folder" type="file" webkitdirectory hidden>
+      <span class="muted small">Un resumen de muchos correos de golpe, para un SOC. También puedes arrastrar la carpeta aquí. Todo en local.</span>
+    </div>
+
     <p class="or">o pega su código fuente</p>
     <textarea id="raw" rows="7" spellcheck="false" placeholder="Received: from ...&#10;From: ...&#10;Subject: ...&#10;&#10;..."></textarea>
 
@@ -80,6 +86,20 @@
     <p id="error" class="error" hidden></p>
   </section>
 
+  <section id="batch" hidden>
+    <div class="card">
+      <h2>Resumen de la carpeta</h2>
+      <p id="batch-summary"></p>
+      <p id="batch-status" class="muted small" role="status"></p>
+      <div class="actions">
+        <button id="batch-csv" type="button">Descargar CSV</button>
+        <button id="batch-md" type="button">Descargar Markdown</button>
+      </div>
+      <div id="batch-table"></div>
+    </div>
+    <button id="batch-again" type="button">Analizar otro</button>
+  </section>
+
   <section id="result" hidden>
     <div id="verdict" class="card verdict">
       <div class="verdict-text">
@@ -120,6 +140,7 @@
       <div id="attachments"></div>
     </div>
 
+    <button id="back-batch" type="button" hidden>Volver al resumen</button>
     <button id="again" type="button">Analizar otro</button>
   </section>
 </main>

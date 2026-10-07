@@ -110,6 +110,31 @@ En el móvil también se instala (en el iPhone, desde Safari: *Compartir > Añad
 pantalla de inicio*), aunque ahí lo de abrir archivos no está: esa parte solo existe en
 Chrome y Edge de ordenador.
 
+## Una carpeta entera de correos (para un SOC)
+
+Para revisar muchos `.eml` de golpe y quedarte con un resumen: cuántos son peligrosos, qué
+hallazgos y dominios se repiten, qué adjuntos son malos y la lista ordenada por riesgo.
+
+- **En la página:** *Analizar una carpeta de .eml* (o arrastra la carpeta). Máximo 500 correos,
+  siempre en local, con tabla, y descarga en CSV o Markdown. Pulsa el nombre de un correo para
+  ver su análisis completo.
+- **En la terminal** (Node 20 o más, sin instalar nada):
+
+  ```bash
+  node scripts/analyze-folder.mjs ./cuarentena                 # resumen en texto
+  node scripts/analyze-folder.mjs ./cuarentena --csv --out informe.csv
+  node scripts/analyze-folder.mjs ./cuarentena --md            # o --json
+  node scripts/analyze-folder.mjs ./cuarentena --completo      # consulta dominios (modo completo)
+  node scripts/analyze-folder.mjs ./cuarentena --acortadores   # y sigue los acortadores
+  ```
+
+  Recorre las subcarpetas, un correo roto no para el lote y los QR se leen en las imágenes PNG.
+  El código de salida es **1 si hay algún correo en peligro**, 0 si no y 2 si se usa mal, para
+  poder enchufarlo a un pipeline. Sin `--completo` no hace ninguna petición de red.
+
+El CSV neutraliza las celdas que empiezan por `=`, `+`, `-` o `@` (un asunto malicioso no debe
+ejecutarse como fórmula al abrirlo en Excel).
+
 ## Ejemplos
 
 Hay cuatro correos de ejemplo para probarlo sin tener uno a mano:
@@ -175,6 +200,8 @@ js/
 ├── domains.js   punycode (RFC 3492), dominios parecidos, marcas
 ├── analyze.js   las comprobaciones y la puntuación
 ├── qr.js        códigos QR de las imágenes del correo (jsQR en js/vendor/)
+├── batch.js     resumen de muchos correos, CSV y Markdown
+├── folder.js    carpeta de .eml en la página
 ├── online.js    consultas de red del modo completo (RDAP, DNS, acortadores)
 ├── settings.js  modo privado o completo
 └── app.js       la página

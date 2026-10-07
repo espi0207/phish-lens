@@ -5,6 +5,8 @@
 
 import { analyze, analyzeLink } from "./analyze.js";
 import { parseMessage } from "./mail.js";
+import { summarize, toCsv, toMarkdown } from "./batch.js";
+import { analyzeFiles, emlFromEntries, emlFromInput, MAX_FILES } from "./folder.js";
 import { enrich } from "./online.js";
 import { applyQr, scanQr } from "./qr.js";
 import { canFollowShorteners, getSettings, hasShortenerPermission, requestShortenerPermission, saveSettings } from "./settings.js";
@@ -285,9 +287,101 @@ async function loadSample(name) {
   }
 }
 
+let batch = null;
+
+async function startBatch(files) {
+  showError("");
+  if (!files.length) {
+    showError("No he encontrado ningún .eml en esa carpeta.");
+    return;
+  }
+  $("input").hidden = true;
+  $("batch").hidden = false;
+  $("batch-summary").textContent = "";
+  $("batch-table").replaceChildren();
+  const { items, truncated } = await analyzeFiles(files, (i, n) => {
+    $("batch-status").textContent = `Analizando ${i + 1} de ${n}...`;
+  });
+  batch = { items, summary: summarize(items) };
+  $("batch-status").textContent = truncated ? `Solo se han analizado los primeros ${MAX_FILES} correos.` : "";
+  renderBatch();
+}
+
+const LEVEL_PILL = { peligro: "alta", sospechoso: "media", limpio: "ok" };
+
+function renderBatch() {
+  const { summary, items } = batch;
+  const { levels } = summary;
+  $("batch-summary").textContent =
+    `${summary.analyzed} de ${summary.total} correos analizados: ${levels.peligro} en peligro, ${levels.sospechoso} sospechosos, ${levels.limpio} limpios.` +
+    (summary.errors.length ? ` ${summary.errors.length} no se han podido leer (${summary.errors.map((e) => e.name).join(", ")}).` : "");
+  const rows = summary.rows.map((row) =>
+    el(
+      "tr",
+      {},
+      el("td", {}, el("span", { class: `pill ${LEVEL_PILL[row.verdict]}` }, row.verdict)),
+      el("td", {}, String(row.score)),
+      el("td", {}, el("button", { type: "button", class: "name-btn", "data-name": row.name, title: "Ver el análisis completo" }, row.name)),
+      el("td", { class: "break wide-only" }, row.subject || el("span", { class: "muted" }, "(sin asunto)")),
+      el("td", { class: "break wide-only" }, row.from),
+    ),
+  );
+  $("batch-table").replaceChildren(
+    el(
+      "div",
+      { class: "table-wrap" },
+      el(
+        "table",
+        {},
+        el(
+          "thead",
+          {},
+          el("tr", {}, ["Veredicto", "Puntos", "Archivo (pulsa para ver el análisis)", "Asunto", "Remitente"].map((h, i) => el("th", { class: i > 2 ? "wide-only" : "" }, h))),
+        ),
+        el("tbody", {}, rows),
+      ),
+    ),
+  );
+  for (const button of $("batch-table").querySelectorAll("button[data-name]")) {
+    button.addEventListener("click", async () => {
+      const item = items.find((i) => i.name === button.dataset.name);
+      show(new Uint8Array(await item.file.arrayBuffer()));
+      $("batch").hidden = true;
+      $("back-batch").hidden = false;
+    });
+  }
+}
+
+function download(name, text, type) {
+  const url = URL.createObjectURL(new Blob([text], { type }));
+  const link = el("a", { href: url, download: name });
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+$("folder-btn").addEventListener("click", () => $("folder").click());
+$("folder").addEventListener("change", (e) => startBatch(emlFromInput(e.target.files)));
+$("batch-csv").addEventListener("click", () => download("resumen-correos.csv", "\ufeff" + toCsv(batch.summary), "text/csv;charset=utf-8"));
+$("batch-md").addEventListener("click", () => download("resumen-correos.md", toMarkdown(batch.summary), "text/markdown;charset=utf-8"));
+$("batch-again").addEventListener("click", () => reset());
+$("back-batch").addEventListener("click", () => {
+  onlineTicket++;
+  setStatus("");
+  $("result").hidden = true;
+  $("back-batch").hidden = true;
+  $("batch").hidden = false;
+  window.scrollTo({ top: 0 });
+});
+
 function reset() {
   onlineTicket++;
   setStatus("");
+  batch = null;
+  $("batch").hidden = true;
+  $("back-batch").hidden = true;
+  $("folder").value = "";
   $("result").hidden = true;
   $("input").hidden = false;
   $("raw").value = "";
@@ -357,6 +451,12 @@ for (const type of ["dragenter", "dragover"]) {
 for (const type of ["dragleave", "drop"]) drop.addEventListener(type, () => drop.classList.remove("over"));
 drop.addEventListener("drop", (e) => {
   e.preventDefault();
+  // Las entradas hay que pedirlas ahora: pasado el evento, dataTransfer se vacía.
+  const entries = [...e.dataTransfer.items].map((item) => item.webkitGetAsEntry?.()).filter(Boolean);
+  if (entries.some((entry) => entry.isDirectory)) {
+    emlFromEntries(entries).then(startBatch, () => showError("No he podido leer esa carpeta."));
+    return;
+  }
   const file = e.dataTransfer.files[0];
   if (file) readFile(file);
 });
