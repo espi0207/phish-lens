@@ -34,6 +34,28 @@ imita a otro, si los enlaces llevan a donde dicen y si los adjuntos esconden alg
 El correo **no sale de tu navegador**: no hay servidor, todo se analiza con JavaScript
 en tu equipo. Es HTML, CSS y JavaScript sin librerías ni compilación.
 
+## Dos modos
+
+| | **Privado** (por defecto) | **Completo** (lo activas tú) |
+|---|---|---|
+| Qué hace | Todo en local, sin conexión | Además consulta la red |
+| Peticiones | Ninguna (compruébalo en la pestaña *Red* de DevTools) | RDAP y DNS por HTTPS |
+| Sale del equipo | Nada | Solo nombres de dominio, nunca el correo |
+
+En modo completo, para los dominios del remitente y de los enlaces:
+
+- **Edad del dominio** por RDAP (`rdap.org`): "registrado hace 3 días" es de las señales más
+  fiables. Los registros que no publican RDAP, como `.es`, no se pueden consultar: se avisa.
+- **SPF y DMARC reales**, leídos del DNS (Cloudflare DNS sobre HTTPS), en vez de fiarse solo
+  de la cabecera: si la cabecera dice `spf=pass` y el dominio no publica SPF, salta.
+- **Listas negras**: el DNS de seguridad de Cloudflare bloquea por malware y phishing conocidos.
+  Se consulta el nombre completo (`malware.ejemplo.com`), no solo el dominio.
+- **Acortadores** (bit.ly...): solo en la extensión, que pide un permiso aparte la primera vez.
+  Hace una petición `HEAD` y lee la URL final sin abrirla en el navegador, pero sí **contacta con
+  la web de destino**, así que quien la controla ve tu IP.
+
+Si una consulta falla sale "no se pudo comprobar", nunca un "todo bien".
+
 ![Análisis de un correo falso de Correos](docs/captura.png)
 
 ## La extensión
@@ -57,7 +79,8 @@ Lo más cómodo es tenerlo en el navegador:
 Pide los permisos justos: el menú del clic derecho, guardar el último correo mientras el
 navegador está abierto (para el botón *Ver el análisis completo*) y entrar en
 `mail.google.com` para leer la página de *Mostrar original*. No tiene permiso para ver
-el resto de webs ni se conecta a ningún sitio.
+el resto de webs. En modo privado no se conecta a ningún sitio; en modo completo consulta solo
+dominios (ver *Dos modos*), y los acortadores piden un permiso opcional que aceptas tú.
 
 ### Instalarla
 
@@ -153,8 +176,9 @@ Algunas decisiones:
 - **El HTML del correo no se muestra nunca.** Los enlaces se sacan con expresiones
   regulares y todo lo que se pinta va con `textContent`. Hay una prueba que falla si
   alguien usa `innerHTML` o parecidos en el proyecto. Además la página lleva una
-  Content-Security-Policy que no deja cargar scripts de fuera, enviar formularios ni
-  conectarse a otros sitios.
+  Content-Security-Policy que no deja cargar scripts de fuera ni enviar formularios. Las
+  conexiones (`connect-src https:`) existen solo para el modo completo: una prueba falla si
+  algo fuera de `js/online.js` hace una petición, y en modo privado no sale ninguna.
 - **El parser trabaja sobre bytes.** Un correo puede mezclar UTF-8, ISO-8859-1 y
   Windows-1252 en distintas partes. Se guarda todo como bytes y cada parte se
   descodifica con su juego de caracteres al final; si no, las tildes salen rotas.
@@ -168,18 +192,19 @@ Algunas decisiones:
 
 ## Limitaciones
 
-- No comprueba las firmas DKIM ni consulta SPF por su cuenta: haría falta preguntar al
-  DNS, y la idea es que nada salga del navegador. Se fía de lo que puso tu proveedor.
+- No comprueba las firmas DKIM. SPF y DMARC solo se leen del DNS en modo completo; en
+  modo privado se fía de lo que puso tu proveedor.
 - No mira dentro de los comprimidos ni analiza los adjuntos.
-- No consulta listas negras de dominios o URLs, por lo mismo: sería enviar datos fuera.
+- Las listas negras son solo el DNS de seguridad de Cloudflare: Spamhaus y SURBL bloquean
+  los resolutores públicos, así que no se pueden usar desde el navegador.
 - La lista de marcas es corta (bancos, paquetería y servicios que más se suplantan en
   España) y el "dominio registrado" es una aproximación sin la Public Suffix List.
 - Que no salga nada no quiere decir que el correo sea seguro. Un correo bien hecho desde
   una cuenta robada puede pasar todas estas comprobaciones.
 - La extensión solo pone el aviso sola en Gmail. En Outlook, Yahoo y los demás hay que
   copiar el código fuente y pegarlo en el analizador (el icono de la extensión).
-- Al comprobar un enlace suelto solo se mira la dirección: no se abre ni se siguen sus
-  redirecciones. De un enlace acortado (bit.ly y compañía) no se puede saber adónde lleva.
+- Un enlace acortado (bit.ly y compañía) solo se puede seguir en la extensión y en modo
+  completo; en la web no, porque el navegador no deja ver adónde redirige.
 - La extensión es para Chrome, Edge y los navegadores basados en Chromium. Para Firefox
   habría que adaptarla.
 

@@ -204,6 +204,34 @@ button.primary {
   font-size: 0.9rem;
 }
 
+.mode {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin: 14px 0 0;
+  padding: 10px 14px 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.mode legend {
+  padding: 0 6px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.mode label {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  align-items: start;
+  font-size: 0.95rem;
+}
+
+.mode input {
+  margin-top: 4px;
+  accent-color: var(--accent);
+}
+
 .samples {
   display: flex;
   gap: 8px;

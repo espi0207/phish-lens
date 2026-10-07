@@ -25,7 +25,10 @@ test("el manifiesto: versión de package.json y los permisos justos", () => {
   // Nada de "leer todos tus datos en todas las webs": solo el menú del clic derecho y la
   // memoria de la sesión, y el script de Gmail solo en Gmail.
   assert.deepEqual(manifest.permissions, ["contextMenus", "storage"]);
+  // Sin permisos de host al instalar: RDAP y DNS por HTTPS admiten CORS. Solo se pide, con un clic
+  // y para seguir acortadores, el permiso opcional.
   assert.equal(manifest.host_permissions, undefined);
+  assert.deepEqual(manifest.optional_host_permissions, ["https://*/*", "http://*/*"]);
   assert.deepEqual(manifest.content_scripts.map((c) => c.matches).flat(), ["https://mail.google.com/mail/*"]);
   const referenced = [
     manifest.background.service_worker,

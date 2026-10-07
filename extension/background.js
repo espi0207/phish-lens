@@ -1,9 +1,12 @@
 // La parte de la extensión que no se ve: el icono, el menú del clic derecho y el análisis
 // de los correos que le pasa gmail.js. El análisis es el mismo código que el de la página
-// (js/), y todo pasa dentro del navegador: la extensión no se conecta a ningún sitio.
+// (js/) y pasa dentro del navegador. Solo en modo completo, y solo si el usuario lo activa,
+// se consultan los dominios por red (js/online.js); el correo nunca sale.
 
 import { analyze } from "../js/analyze.js";
 import { parseMessage } from "../js/mail.js";
+import { enrich } from "../js/online.js";
+import { getSettings, hasShortenerPermission } from "../js/settings.js";
 
 const PAGE = "index.html";
 const KEEP = 5; // correos de Gmail que se guardan (solo mientras el navegador está abierto)
@@ -38,7 +41,15 @@ chrome.runtime.onMessage.addListener((message, sender, reply) => {
 
 /** Analiza el correo en crudo y devuelve lo justo para el aviso que se pone en Gmail. */
 export async function summarize(raw) {
-  const result = analyze(parseMessage(raw));
+  let result = analyze(parseMessage(raw));
+  const settings = await getSettings();
+  if (settings.mode === "completo") {
+    try {
+      result = await enrich(result, { shorteners: settings.shorteners && (await hasShortenerPermission()) });
+    } catch {
+      // Sin red, el aviso sale con el análisis local.
+    }
+  }
   const key = `correo-${Date.now()}`;
   try {
     // Se guarda para "Ver el análisis completo". storage.session vive en memoria y se borra

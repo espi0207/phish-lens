@@ -17,7 +17,7 @@ import { parseAddress, parseAddressList } from "./mail.js";
 
 export const WEIGHT = { alta: 30, media: 12, baja: 4, info: 0, ok: 0 };
 
-const FREE_MAIL = new Set([
+export const FREE_MAIL = new Set([
   "gmail.com", "googlemail.com", "hotmail.com", "hotmail.es", "outlook.com", "outlook.es", "live.com",
   "yahoo.com", "yahoo.es", "icloud.com", "me.com", "proton.me", "protonmail.com", "gmx.com", "gmx.es",
   "aol.com", "mail.ru", "yandex.ru", "zoho.com",
@@ -163,6 +163,10 @@ function checkSender(from, replyTo, returnPath, recipientDomains, add) {
   }
 }
 
+export function isShortener(host) {
+  return SHORTENERS.has(host) || SHORTENERS.has(registrableDomain(host));
+}
+
 function checkLinks(links, recipientDomains, add) {
   const reported = new Set();
   const once = (key, ...args) => {
@@ -207,7 +211,7 @@ function checkLinks(links, recipientDomains, add) {
       once(`text:${textDomain}:${host}`, "alta", "El texto de un enlace no coincide con su destino",
         `Se lee "${text}" pero lleva a ${shown}.`);
     }
-    if (SHORTENERS.has(registrableDomain(host)) || SHORTENERS.has(host)) {
+    if (isShortener(host)) {
       problems.push("acortador");
       once(`short:${host}`, "media", "Enlace acortado", `${shown} esconde el destino real detrás de un acortador.`);
     } else if (url.protocol === "http:") {
@@ -306,16 +310,34 @@ export function analyze(message, now = new Date()) {
     add("baja", "La fecha del correo está en el futuro", "La cabecera Date la pone quien envía: puede ser cualquier cosa.");
   }
 
-  const { score, verdict } = rate(findings, {
-    peligro: "Muy probablemente es phishing",
-    sospechoso: "Sospechoso: revísalo con cuidado",
-    limpio: "No veo señales claras de phishing",
-  });
+  const { score, verdict } = rate(findings, MAIL_TEXTS);
   return {
     from, replyTo, returnPath, to, subject,
     date: date && !isNaN(date) ? date : null,
     auth, hops, links, attachments, findings, score, verdict,
   };
+}
+
+const MAIL_TEXTS = {
+  peligro: "Muy probablemente es phishing",
+  sospechoso: "Sospechoso: revísalo con cuidado",
+  limpio: "No veo señales claras de phishing",
+};
+const LINK_TEXTS = {
+  peligro: "Muy probablemente es un enlace trampa",
+  sospechoso: "Sospechoso: mejor no lo abras",
+  limpio: "No veo señales claras de engaño",
+};
+// En un enlace suelto una sola señal grave ya basta: con esta escala una "alta" llega a peligro (50)
+// y una "media" a sospechoso (20).
+const LINK_SCALE = 5 / 3;
+
+/** Vuelve a puntuar un resultado al que se le han añadido hallazgos (las consultas de red). */
+export function rerate(result) {
+  const isLink = "link" in result;
+  const findings = [...result.findings];
+  const { score, verdict } = rate(findings, isLink ? LINK_TEXTS : MAIL_TEXTS, isLink ? LINK_SCALE : 1);
+  return { ...result, findings, score, verdict };
 }
 
 /** Ordena los hallazgos (los graves primero) y saca la puntuación y el veredicto. */
@@ -339,17 +361,6 @@ export function analyzeLink(href) {
   if (link.problems.includes("sin HTTPS")) {
     add("baja", "Sin HTTPS", `${link.shown}: lo que escribas en esa página viaja sin cifrar.`);
   }
-  // En un correo las señales se van sumando; en un enlace suelto, una sola grave (un dominio
-  // que imita a otro, una IP...) ya basta. Con esta escala una "alta" llega a peligro (50) y
-  // una "media" a sospechoso (20).
-  const { score, verdict } = rate(
-    findings,
-    {
-      peligro: "Muy probablemente es un enlace trampa",
-      sospechoso: "Sospechoso: mejor no lo abras",
-      limpio: "No veo señales claras de engaño",
-    },
-    5 / 3,
-  );
+  const { score, verdict } = rate(findings, LINK_TEXTS, LINK_SCALE);
   return { link, findings, score, verdict };
 }

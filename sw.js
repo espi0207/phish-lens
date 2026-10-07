@@ -12,6 +12,8 @@ const FILES = [
   "js/domains.js",
   "js/links.js",
   "js/mail.js",
+  "js/online.js",
+  "js/settings.js",
   "manifest.webmanifest",
   "icons/icon.svg",
   "icons/icon-192.png",

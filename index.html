@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<!-- Ni scripts de fuera, ni formularios, ni conexiones: el correo no puede salir de aquí. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<!-- Ni scripts de fuera ni formularios. connect-src admite https: solo para el modo completo (js/online.js: RDAP y DNS); en modo privado no se hace ninguna petición. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https:; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="description" content="Analiza un correo sospechoso en tu navegador y explica si parece phishing. El correo no sale de tu equipo.">
 <meta name="theme-color" content="#2f6fed">
 <title>phish-lens: ¿es phishing este correo?</title>
@@ -36,9 +36,16 @@
     <p class="or">o pega su código fuente</p>
     <textarea id="raw" rows="7" spellcheck="false" placeholder="Received: from ...&#10;From: ...&#10;Subject: ...&#10;&#10;..."></textarea>
 
+    <fieldset class="mode">
+      <legend>Qué consulta</legend>
+      <label><input type="radio" name="mode" value="privado" checked> <span><b>Privado:</b> todo en tu navegador, sin conexión.</span></label>
+      <label><input type="radio" name="mode" value="completo"> <span><b>Completo:</b> además consulta la edad del dominio, su SPF y DMARC y si está en listas negras. Solo salen los dominios, nunca el correo.</span></label>
+      <label id="shorteners-row" hidden><input type="checkbox" id="shorteners"> <span>Seguir los acortadores (bit.ly...) hasta el destino. Contacta con la web final, así que la extensión pide un permiso.</span></label>
+    </fieldset>
+
     <div class="actions">
       <button id="analyze" class="primary" type="button">Analizar</button>
-      <span class="privacy">Se analiza en tu navegador. El correo no se envía a ningún sitio.</span>
+      <span id="privacy" class="privacy">Se analiza en tu navegador. El correo no se envía a ningún sitio.</span>
     </div>
 
     <form id="link-form" class="link-check">
@@ -80,6 +87,7 @@
       </div>
       <div class="gauge" aria-hidden="true"><div id="gauge-fill" class="gauge-fill"></div></div>
       <p id="verdict-score" class="muted small"></p>
+      <p id="online-status" class="muted small" role="status" hidden></p>
     </div>
 
     <div class="card">

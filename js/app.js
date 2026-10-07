@@ -5,6 +5,8 @@
 
 import { analyze, analyzeLink } from "./analyze.js";
 import { parseMessage } from "./mail.js";
+import { enrich } from "./online.js";
+import { canFollowShorteners, getSettings, hasShortenerPermission, requestShortenerPermission, saveSettings } from "./settings.js";
 
 const MAX_SIZE = 15 * 1024 * 1024;
 const SEVERITY_LABEL = { alta: "Alta", media: "Media", baja: "Baja", info: "Info", ok: "Bien" };
@@ -185,6 +187,10 @@ function show(input) {
   renderLinks(result.links);
   renderAttachments(result.attachments);
   showResult(true);
+  addOnline(result, (r) => {
+    renderVerdict(r);
+    renderFindings(r.findings);
+  });
 }
 
 /** Un enlace suelto: el mismo resultado, sin las partes que solo tienen sentido en un correo. */
@@ -200,6 +206,44 @@ function showLink(href) {
   renderFindings(result.findings);
   renderLinks([result.link]);
   showResult(false);
+  addOnline(result, (r) => {
+    renderVerdict({ ...r, subject: null });
+    $("verdict-subject").textContent = r.link.shown;
+    renderFindings(r.findings);
+  });
+}
+
+let onlineTicket = 0;
+
+function setStatus(text) {
+  $("online-status").textContent = text;
+  $("online-status").hidden = !text;
+}
+
+/** En modo completo, añade lo que solo se sabe con red y vuelve a pintar el veredicto. */
+async function addOnline(result, rerender) {
+  const ticket = ++onlineTicket;
+  const settings = await getSettings();
+  if (settings.mode !== "completo") {
+    setStatus("");
+    return;
+  }
+  setStatus("Consultando dominios...");
+  try {
+    const shorteners = settings.shorteners && (await hasShortenerPermission());
+    const enriched = await enrich(result, { shorteners });
+    if (ticket !== onlineTicket) return;
+    rerender(enriched);
+    const { hosts, resolved } = enriched.online;
+    const followed = resolved.length ? ` Acortadores seguidos: ${resolved.length}.` : "";
+    setStatus(
+      hosts.length
+        ? `Consultados (RDAP y DNS de Cloudflare): ${hosts.join(", ")}.${followed}`
+        : `Modo completo: no había dominios que consultar.${followed}`,
+    );
+  } catch {
+    if (ticket === onlineTicket) setStatus("No he podido hacer las consultas de red. Lo de arriba es solo el análisis local.");
+  }
 }
 
 function showResult(isMail) {
@@ -229,6 +273,8 @@ async function loadSample(name) {
 }
 
 function reset() {
+  onlineTicket++;
+  setStatus("");
   $("result").hidden = true;
   $("input").hidden = false;
   $("raw").value = "";
@@ -255,6 +301,35 @@ $("link-form").addEventListener("submit", (e) => {
   history.replaceState(null, "", `#enlace=${encodeURIComponent($("link").value.trim())}`);
 });
 $("again").addEventListener("click", reset);
+
+const PRIVACY = {
+  privado: "Se analiza en tu navegador. El correo no se envía a ningún sitio.",
+  completo: "El correo no se envía a ningún sitio: solo se consultan sus dominios (rdap.org y Cloudflare).",
+};
+
+async function initSettings() {
+  const settings = await getSettings();
+  const showMode = (mode) => {
+    $("privacy").textContent = PRIVACY[mode];
+    $("shorteners-row").hidden = mode !== "completo" || !canFollowShorteners();
+  };
+  for (const radio of document.querySelectorAll('input[name="mode"]')) {
+    radio.checked = radio.value === settings.mode;
+    radio.addEventListener("change", () => {
+      showMode(radio.value);
+      saveSettings({ mode: radio.value });
+    });
+  }
+  $("shorteners").checked = settings.shorteners && (await hasShortenerPermission());
+  $("shorteners").addEventListener("change", async (e) => {
+    // El permiso se pide en el mismo clic: el navegador no lo admite de otra forma.
+    const granted = e.target.checked ? await requestShortenerPermission() : false;
+    e.target.checked = granted;
+    saveSettings({ shorteners: granted });
+  });
+  showMode(settings.mode);
+}
+initSettings();
 for (const button of document.querySelectorAll("[data-sample]")) {
   button.addEventListener("click", () => loadSample(button.dataset.sample));
 }
