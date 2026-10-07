@@ -40,7 +40,7 @@ en tu equipo. Es HTML, CSS y JavaScript sin compilación, y sin librerías salvo
 imágenes que el correo pide a una web no se descargan (avisarían a quien envía de que lo has abierto)
 y los PDF no se miran.
 
-## Dos modos
+## Modos de uso
 
 | | **Privado** (por defecto) | **Completo** (lo activas tú) |
 |---|---|---|
@@ -64,7 +64,7 @@ Si una consulta falla sale "no se pudo comprobar", nunca un "todo bien".
 
 ![Análisis de un correo falso de Correos](docs/captura.png)
 
-## La extensión
+## Extensión para el navegador
 
 Lo más cómodo es tenerlo en el navegador:
 
@@ -86,9 +86,9 @@ Pide los permisos justos: el menú del clic derecho, guardar el último correo m
 navegador está abierto (para el botón *Ver el análisis completo*) y entrar en
 `mail.google.com` para leer la página de *Mostrar original*. No tiene permiso para ver
 el resto de webs. En modo privado no se conecta a ningún sitio; en modo completo consulta solo
-dominios (ver *Dos modos*), y los acortadores piden un permiso opcional que aceptas tú.
+dominios (ver *Modos de uso*), y los acortadores piden un permiso opcional que aceptas tú.
 
-### Instalarla
+### Instalación de la extensión
 
 Todavía no está en la Chrome Web Store, así que de momento se instala a mano:
 
@@ -98,7 +98,7 @@ Todavía no está en la Chrome Web Store, así que de momento se instala a mano:
    desarrollador**.
 3. Pulsa **Cargar descomprimida** y elige esa carpeta.
 
-## Instalarla como app
+## Instalación como app
 
 En Chrome o Edge sale el botón **Instalar como app** (o el icono de instalar en la barra
 de direcciones). Queda en el menú de inicio o en Aplicaciones con su propia ventana,
@@ -110,7 +110,7 @@ En el móvil también se instala (en el iPhone, desde Safari: *Compartir > Añad
 pantalla de inicio*), aunque ahí lo de abrir archivos no está: esa parte solo existe en
 Chrome y Edge de ordenador.
 
-## Una carpeta entera de correos (para un SOC)
+## Análisis por lotes (SOC)
 
 Para revisar muchos `.eml` de golpe y quedarte con un resumen: cuántos son peligrosos, qué
 hallazgos y dominios se repiten, qué adjuntos son malos y la lista ordenada por riesgo.
@@ -147,7 +147,7 @@ Hay cuatro correos de ejemplo para probarlo sin tener uno a mano:
 Están en `samples/` y todos los dominios son `.example`, que está reservado y no es de
 nadie.
 
-## Qué mira
+## Comprobaciones
 
 **El remitente**
 
@@ -182,7 +182,7 @@ dados la vuelta con el carácter U+202E.
 Cada cosa suma puntos según su gravedad y con eso sale el veredicto. Ninguna comprobación
 decide sola.
 
-## Cómo sacar un correo
+## Obtención del correo original
 
 - **Gmail**: abre el correo, menú ⋮, *Descargar mensaje* (o *Mostrar original* para copiarlo).
 - **Outlook en la web**: menú …, *Ver*, *Ver origen del mensaje*.
@@ -191,7 +191,7 @@ decide sola.
 
 Hace falta el correo entero, con las cabeceras: solo el texto no basta.
 
-## Cómo funciona
+## Arquitectura
 
 ```text
 js/
@@ -207,7 +207,7 @@ js/
 └── app.js       la página
 ```
 
-Algunas decisiones:
+Decisiones de diseño:
 
 - **El HTML del correo no se muestra nunca.** Los enlaces se sacan con expresiones
   regulares y todo lo que se pinta va con `textContent`. Hay una prueba que falla si
@@ -269,7 +269,7 @@ Lo que la hace instalable son tres archivos: `manifest.webmanifest` (nombre, ico
 la página para usarla sin conexión) y los iconos de `icons/`. Si se añade un archivo a
 la página, hay que meterlo en la lista de `sw.js`; hay una prueba que lo vigila.
 
-### La extensión
+### Compilación de la extensión
 
 ```bash
 npm run build:extension     # deja la extensión en dist/extension y el .zip en dist/
