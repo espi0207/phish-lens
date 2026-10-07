@@ -1,7 +1,29 @@
+<div align="center">
+
 # phish-lens
 
-[![CI](https://github.com/espi0207/phish-lens/actions/workflows/ci.yml/badge.svg)](https://github.com/espi0207/phish-lens/actions/workflows/ci.yml)
-[![Extensión](https://github.com/espi0207/phish-lens/actions/workflows/extension.yml/badge.svg)](https://github.com/espi0207/phish-lens/actions/workflows/extension.yml)
+**Analiza un correo sospechoso y te explica por qué es (o no) phishing.**
+
+[![Versión](https://img.shields.io/github/v/release/espi0207/phish-lens?style=for-the-badge&logo=github&label=versi%C3%B3n&color=2563eb)](https://github.com/espi0207/phish-lens/releases/latest)
+[![CI](https://img.shields.io/github/actions/workflow/status/espi0207/phish-lens/ci.yml?style=for-the-badge&logo=githubactions&logoColor=white&label=CI)](https://github.com/espi0207/phish-lens/actions/workflows/ci.yml)
+[![Extensión](https://img.shields.io/github/actions/workflow/status/espi0207/phish-lens/extension.yml?style=for-the-badge&logo=googlechrome&logoColor=white&label=extensi%C3%B3n)](https://github.com/espi0207/phish-lens/actions/workflows/extension.yml)
+[![Licencia MIT](https://img.shields.io/badge/licencia-MIT-16a34a?style=for-the-badge)](LICENSE)
+
+![Sin dependencias](https://img.shields.io/badge/dependencias-0-0f172a?style=flat-square)
+![JavaScript](https://img.shields.io/badge/JavaScript-ES%20modules-f7df1e?style=flat-square&logo=javascript&logoColor=black)
+![Manifest V3](https://img.shields.io/badge/Manifest-V3-4285f4?style=flat-square&logo=googlechrome&logoColor=white)
+![Privacidad](https://img.shields.io/badge/privacidad-100%25%20local-7c3aed?style=flat-square&logo=shieldsdotio&logoColor=white)
+![Node](https://img.shields.io/badge/node-%E2%89%A520-5fa04e?style=flat-square&logo=nodedotjs&logoColor=white)
+
+</div>
+
+| | |
+|---|---|
+| **Versión** | 1.0.0 |
+| **Autor** | [espi0207](https://github.com/espi0207) |
+| **Licencia** | [MIT](LICENSE) |
+| **Navegadores** | Chrome, Edge y basados en Chromium |
+| **Web** | https://espi0207.github.io/phish-lens/ |
 
 **Extensión para Chrome y Edge: [descárgala](https://github.com/espi0207/phish-lens/releases/latest/download/phish-lens-extension.zip)** · **O úsalo en la web: https://espi0207.github.io/phish-lens/**
 
