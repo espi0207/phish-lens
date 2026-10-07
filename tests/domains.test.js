@@ -73,3 +73,20 @@ test("marcas en el nombre visible", () => {
 test("defang", () => {
   assert.equal(defang("https://login.evil.example/x?a=b.c"), "hxxps://login[.]evil[.]example/x?a=b.c");
 });
+
+test("marcas españolas en castellano y catalán", () => {
+  assert.deepEqual(brandsMentioned("DGT - Dirección General de Tráfico"), ["dgt"]);
+  assert.deepEqual(brandsMentioned("Seguretat Social"), ["seguridadsocial"]);
+  assert.deepEqual(brandsMentioned("Agència Tributària de Catalunya"), ["agenciatributaria"]);
+  assert.deepEqual(brandsMentioned("Mossos d'Esquadra"), ["gencat"]);
+  assert.deepEqual(brandsMentioned("Cl@ve PIN"), ["clavepin"]);
+  assert.deepEqual(brandsMentioned("ING Direct"), ["ing"]);
+  assert.deepEqual(brandsMentioned("estamos testing"), []);
+});
+
+test("dominios oficiales españoles no saltan, los parecidos sí", () => {
+  for (const host of ["www.dgt.es", "sede.dgt.gob.es", "sede.seg-social.gob.es", "www.seg-social.es", "mossos.gencat.cat", "www.correos.es"]) {
+    assert.equal(lookalikeReason(host), null, host);
+  }
+  assert.match(lookalikeReason("seg-social.es.verificacio-compte.example"), /seg-social/);
+});

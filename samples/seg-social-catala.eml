@@ -1,0 +1,24 @@
+Authentication-Results: mx.tudominio.example;
+ spf=softfail smtp.mailfrom=info@seguretat-social.example;
+ dkim=none;
+ dmarc=fail (p=NONE) header.from=seguretat-social.example
+Received: from vps-5510.hosting-barato.example (vps-5510.hosting-barato.example [203.0.113.55])
+ by mx.tudominio.example with SMTP id k20D; Tue, 06 Oct 2026 08:40:30 +0200
+Return-Path: <info@seguretat-social.example>
+From: "Seguretat Social" <info@seguretat-social.example>
+To: jordi.puig@tudominio.example
+Subject: Devolucio pendent: verifiqui el seu compte
+Date: Tue, 06 Oct 2026 08:40:25 +0200
+Message-ID: <20261006064025.5510@seguretat-social.example>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
+
+Estimat usuari:
+
+Teniu una devolucio pendent de 312,40 EUR. Per rebre-la, verifiqui el seu compte
+abans de 48 hores, o el seu compte bloquejat no podra rebre l'ingres.
+
+Accediu aqui: https://seg-social.es.verificacio-compte.example/devolucio
+
+Seguretat Social

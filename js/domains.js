@@ -157,6 +157,18 @@ export const BRANDS = {
   iberdrola: ["iberdrola.es"],
   endesa: ["endesa.com", "endesaclientes.com"],
   agenciatributaria: ["agenciatributaria.es", "agenciatributaria.gob.es"],
+  dgt: ["dgt.es", "dgt.gob.es"],
+  seguridadsocial: ["seg-social.es", "seg-social.gob.es"],
+  clavepin: ["clave.gob.es"],
+  bizum: ["bizum.es"],
+  ing: ["ing.es", "ing.com"],
+  abanca: ["abanca.com", "abanca.es"],
+  ibercaja: ["ibercaja.es", "ibercaja.com"],
+  kutxabank: ["kutxabank.es"],
+  cajamar: ["cajamar.es", "grupocooperativocajamar.es"],
+  evobanco: ["evobanco.com"],
+  renfe: ["renfe.com", "renfe.es"],
+  gencat: ["gencat.cat"],
   coinbase: ["coinbase.com"],
   binance: ["binance.com"],
 };
@@ -193,7 +205,19 @@ const BRAND_NAMES = {
   vodafone: /\bvodafone\b/i,
   iberdrola: /\biberdrola\b/i,
   endesa: /\bendesa\b/i,
-  agenciatributaria: /\b(agencia tributaria|hacienda|aeat)\b/i,
+  agenciatributaria: /\b(agencia tributaria|ag[eè]ncia tributària|hacienda|hisenda|aeat)\b/i,
+  dgt: /\b(dgt|direcci[oó]n general de tr[aá]fico|direcci[oó] general de tr[aà]nsit)\b/i,
+  seguridadsocial: /\b(seguridad social|seguretat social|tesorer[ií]a general de la seguridad social|tgss)\b/i,
+  clavepin: /\bcl@ve\b/i,
+  bizum: /\bbizum\b/i,
+  ing: /\bING\b/, // solo en mayúsculas: "ing" suelto es una terminación inglesa
+  abanca: /\babanca\b/i,
+  ibercaja: /\bibercaja\b/i,
+  kutxabank: /\bkutxabank\b/i,
+  cajamar: /\bcajamar\b/i,
+  evobanco: /\bevo ?banco\b/i,
+  renfe: /\brenfe\b/i,
+  gencat: /\b(generalitat de catalunya|mossos d['’]esquadra|gencat)\b/i,
   coinbase: /\bcoinbase\b/i,
   binance: /\bbinance\b/i,
 };
@@ -201,7 +225,9 @@ const BRAND_NAMES = {
 const LABELS = {
   paypal: "PayPal", bbva: "BBVA", caixabank: "CaixaBank", agenciatributaria: "la Agencia Tributaria",
   dhl: "DHL", mrw: "MRW", ups: "UPS", icloud: "iCloud", linkedin: "LinkedIn", whatsapp: "WhatsApp",
-  docusign: "DocuSign", office365: "Office 365", seur: "SEUR",
+  docusign: "DocuSign", office365: "Office 365", seur: "SEUR", dgt: "la DGT",
+  seguridadsocial: "la Seguridad Social", clavepin: "Cl@ve", ing: "ING", evobanco: "EVO Banco",
+  gencat: "la Generalitat",
 };
 
 /** Cómo se escribe la marca: "PayPal", "BBVA", "Correos"... */
@@ -255,6 +281,12 @@ export function lookalikeReason(host, targets = []) {
   // La marca metida en un dominio que no es suyo: paypal.com.cuenta-segura.example,
   // correos-envios.example...
   const tokens = unicode.split(/[.-]/);
+  for (const { domains } of candidates) {
+    const hyphenated = domains.map(mainLabel).find((l) => l.includes("-") && unicode.includes(l));
+    if (hyphenated && !domains.includes(reg)) {
+      return `"${unicode}" usa el nombre "${hyphenated}", pero el dominio de verdad es ${reg}, no ${domains[0]}`;
+    }
+  }
   for (const { name, domains } of candidates) {
     if (name.length >= 4 && tokens.includes(name) && !domains.includes(reg)) {
       return reg === unicode

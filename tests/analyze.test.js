@@ -151,3 +151,16 @@ test("un enlace suelto: una sola señal grave ya es peligro", () => {
   assert.deepEqual(http.findings.map((f) => f.title), ["Sin HTTPS"]);
   assert.equal(check("hola"), null);
 });
+
+test("ejemplo: multa falsa de la DGT", () => {
+  const r = sample("dgt-multa");
+  assert.equal(r.verdict.level, "peligro");
+  assert.ok(titles(r).includes("alta: Se hace pasar por la DGT"));
+});
+
+test("ejemplo: devolución falsa de la Seguridad Social en catalán", () => {
+  const r = sample("seg-social-catala");
+  assert.equal(r.verdict.level, "peligro");
+  assert.ok(titles(r).includes("alta: Se hace pasar por la Seguridad Social"));
+  assert.ok(titles(r).some((t) => /frase típica|Presiona|Mete prisa/.test(t)));
+});

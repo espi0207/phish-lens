@@ -17,9 +17,11 @@ const FILES = [
   "icons/icon-192.png",
   "icons/icon-512.png",
   "samples/correos-paquete.eml",
+  "samples/dgt-multa.eml",
   "samples/factura-adjunto.eml",
   "samples/fraude-ceo.eml",
   "samples/pedido-legitimo.eml",
+  "samples/seg-social-catala.eml",
 ];
 
 self.addEventListener("install", (event) => {

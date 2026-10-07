@@ -46,7 +46,9 @@ const PHRASES = [
   "inmediatamente", "24 horas", "48 horas", "haga clic", "haz clic", "pulse aquí", "pulsa aquí",
   "introduzca su contraseña", "usuario y contraseña", "su contraseña", "datos bancarios", "tarjeta de crédito",
   "reembolso", "paquete retenido", "pago pendiente", "factura pendiente", "tasas de aduana", "no puedo hablar",
-  "es confidencial", "verify your account", "confirm your identity", "account has been suspended",
+  "es confidencial", "multa pendiente", "multa pendent", "paquet retingut", "compte bloquejat",
+  "verifiqui el seu compte", "confirmi les seves dades", "pagament pendent", "devolucio pendent", "devolucion pendiente",
+  "verify your account", "confirm your identity", "account has been suspended",
   "unusual activity", "urgent", "immediately", "within 24 hours", "click here", "wire transfer", "gift card",
 ];
 

@@ -1,0 +1,24 @@
+Authentication-Results: mx.tudominio.example;
+ spf=fail (el dominio dgt-sancion.example no autoriza a 203.0.113.90) smtp.mailfrom=aviso@dgt-sancion.example;
+ dkim=none;
+ dmarc=fail (p=NONE) header.from=dgt-sancion.example
+Received: from vps-9021.hosting-barato.example (vps-9021.hosting-barato.example [203.0.113.90])
+ by mx.tudominio.example with SMTP id q81Z; Mon, 05 Oct 2026 10:02:11 +0200
+Return-Path: <aviso@dgt-sancion.example>
+From: "DGT - Direccion General de Trafico" <aviso@dgt-sancion.example>
+To: lucia.fernandez@tudominio.example
+Subject: Multa pendiente de pago: ultimo aviso
+Date: Mon, 05 Oct 2026 10:02:05 +0200
+Message-ID: <20261005080205.9021@dgt-sancion.example>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
+
+Estimado conductor:
+
+Consta en nuestros registros una multa pendiente de pago por exceso de velocidad.
+Si no la abona en las proximas 24 horas, se le aplicara un recargo del 50 %.
+
+Pague ahora con descuento: https://dgt-sancion.example/pago?exp=2026-88121
+
+Direccion General de Trafico
