@@ -32,7 +32,13 @@ Le pasas un correo sospechoso (o un enlace) y te dice si parece phishing y, sobr
 imita a otro, si los enlaces llevan a donde dicen y si los adjuntos esconden algo.
 
 El correo **no sale de tu navegador**: no hay servidor, todo se analiza con JavaScript
-en tu equipo. Es HTML, CSS y JavaScript sin librerías ni compilación.
+en tu equipo. Es HTML, CSS y JavaScript sin compilación, y sin librerías salvo una: [jsQR](js/vendor/README.md)
+(Apache-2.0, copiado tal cual) para leer códigos QR.
+
+**Códigos QR:** si el correo lleva un QR en una imagen adjunta o incrustada (la técnica del
+*quishing*), se lee en local y su destino pasa por las mismas comprobaciones que un enlace. Las
+imágenes que el correo pide a una web no se descargan (avisarían a quien envía de que lo has abierto)
+y los PDF no se miran.
 
 ## Dos modos
 
@@ -168,6 +174,9 @@ js/
 ├── links.js     enlaces del HTML, sin llegar a interpretarlo
 ├── domains.js   punycode (RFC 3492), dominios parecidos, marcas
 ├── analyze.js   las comprobaciones y la puntuación
+├── qr.js        códigos QR de las imágenes del correo (jsQR en js/vendor/)
+├── online.js    consultas de red del modo completo (RDAP, DNS, acortadores)
+├── settings.js  modo privado o completo
 └── app.js       la página
 ```
 
@@ -194,7 +203,9 @@ Algunas decisiones:
 
 - No comprueba las firmas DKIM. SPF y DMARC solo se leen del DNS en modo completo; en
   modo privado se fía de lo que puso tu proveedor.
-- No mira dentro de los comprimidos ni analiza los adjuntos.
+- No mira dentro de los comprimidos ni analiza los adjuntos. De las imágenes solo busca QR
+  (no lee el texto de una imagen) y no abre PDF. El aviso de Gmail de la extensión no busca QR:
+  eso se ve al abrir el análisis completo.
 - Las listas negras son solo el DNS de seguridad de Cloudflare: Spamhaus y SURBL bloquean
   los resolutores públicos, así que no se pueden usar desde el navegador.
 - La lista de marcas es corta (bancos, paquetería y servicios que más se suplantan en

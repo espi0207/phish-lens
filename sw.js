@@ -13,7 +13,9 @@ const FILES = [
   "js/links.js",
   "js/mail.js",
   "js/online.js",
+  "js/qr.js",
   "js/settings.js",
+  "js/vendor/jsQR.js",
   "manifest.webmanifest",
   "icons/icon.svg",
   "icons/icon-192.png",
@@ -23,6 +25,7 @@ const FILES = [
   "samples/factura-adjunto.eml",
   "samples/fraude-ceo.eml",
   "samples/pedido-legitimo.eml",
+  "samples/qr-paypal.eml",
   "samples/seg-social-catala.eml",
 ];
 

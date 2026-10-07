@@ -153,6 +153,11 @@ function splitMessage(binary) {
   return cut < 0 ? [text, ""] : [text.slice(0, cut), text.slice(cut + 2)];
 }
 
+// Las imágenes se guardan enteras (para buscar códigos QR); el resto de adjuntos, solo su tamaño.
+const IMAGE_TYPES = /^image\/(png|jpe?g|gif|bmp|webp)$/;
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const MAX_IMAGES = 10;
+
 function parsePart(binary, depth, out) {
   const [head, body] = splitMessage(binary);
   const headers = new Headers(parseHeaders(head));
@@ -181,6 +186,9 @@ function parsePart(binary, depth, out) {
   const isAttachment = disposition.value === "attachment" || (filename && !type.value.startsWith("text/"));
   if (isAttachment || (!type.value.startsWith("text/") && !type.value.startsWith("message/"))) {
     out.attachments.push({ filename, contentType: type.value, size: content.length });
+    if (IMAGE_TYPES.test(type.value) && content.length <= MAX_IMAGE_BYTES && out.images.length < MAX_IMAGES) {
+      out.images.push({ filename, contentType: type.value, data: Uint8Array.from(content, (c) => c.charCodeAt(0)) });
+    }
   } else if (type.value === "text/html") {
     out.html.push(decodeBytes(content, type.params.charset));
   } else if (type.value === "message/rfc822" && depth < MAX_DEPTH) {
@@ -195,9 +203,9 @@ export function parseMessage(input) {
   const binary = typeof input === "string" ? textToBinary(input) : bytesToBinary(input);
   const [head] = splitMessage(binary);
   const headers = new Headers(parseHeaders(head));
-  const out = { text: [], html: [], attachments: [] };
+  const out = { text: [], html: [], attachments: [], images: [] };
   parsePart(binary, 0, out);
-  return { headers, text: out.text.join("\n"), html: out.html.join("\n"), attachments: out.attachments };
+  return { headers, text: out.text.join("\n"), html: out.html.join("\n"), attachments: out.attachments, images: out.images };
 }
 
 /** "Ana <a@x.es>, b@y.es" -> [{...}, {...}] */

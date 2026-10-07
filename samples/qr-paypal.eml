@@ -1,0 +1,37 @@
+Return-Path: <aviso@verificacion-cuenta.example>
+From: "Soporte de cuentas" <aviso@verificacion-cuenta.example>
+To: lucia.fernandez@tudominio.example
+Subject: Verifica tu cuenta: escanea el codigo QR
+Date: Tue, 06 Oct 2026 16:20:05 +0200
+Message-ID: <20261006142005.4410@verificacion-cuenta.example>
+MIME-Version: 1.0
+Content-Type: multipart/related; boundary="qr-boundary-01"
+
+--qr-boundary-01
+Content-Type: text/html; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+
+<html><body>
+<p>Hemos detectado actividad inusual. Escanea este codigo con tu movil.</p>
+<p><img src="cid:qr-verificacion" alt="Codigo QR"></p>
+</body></html>
+
+--qr-boundary-01
+Content-Type: image/png; name="verificacion.png"
+Content-Transfer-Encoding: base64
+Content-ID: <qr-verificacion>
+Content-Disposition: inline; filename="verificacion.png"
+
+iVBORw0KGgoAAAANSUhEUgAAAN4AAADeCAMAAABluU6FAAAABlBMVEX///8AAABVwtN+AAACC0lE
+QVR4nO3RUXbCMBADwHL/S/cAqfYpDgFDR195YbPWmJ8fERERERERERERkS/No06aP25Lb+bnvgMe
+Hh7eDrx+JoFnXjNzvefiZ3h4eBd7Ln72JbzHIQ2gZzSTTQc8PDy8z+L1384b8PDw8P4Pb2b0p1zp
+gIeHh7cP7+zMfAXX95+defJqPDw8vPGzJmuk/rnvgIeHh/de3lqOh/XX8dKia8HD2zZ4e/Caon0a
+cHN6vwEPDw9vB14z3xw5g+fNzfyJumfn8fDy5mb+RN2z83g78ealqWjDSBXXzsXDw8PbgdcAekbC
+p6LpIprT8fDw8N7LS1Xm6un4eb7H4+Hh4e3MexzSAK5XP547Bw8PD2833vG5f5NKX2HMrfDw8PDe
+y0sl5smESYXSm3QWHh4e3p68uWhfva/VXOIT/is8PDy8m3nNuoSff01vGljfDQ8PD++9vOu10ldN
+3TSziMTDw8O7mTcvTc/p1/ki5s3NReDh4eHtw5uPnys2G+YT5z14eHh4O/CedR0zPiHn/TdT/goe
+Hh7ehboJkN7MO2fAvB8PDw9vT14/01RJMzN77rMIxsPDw7uZl45vZmZMM9OcjoeHh/e5vCvU+aum
+Jx4eHt5n8dKGxGvAac/aReDh4eG9krc20zDSfE/Cw8PD243X5Cw1Tc7s9Oti8PDw8G7giYiIiIiI
+iIiIiHxIfgH9SD2ZcZtRaQAAAABJRU5ErkJggg==
+
+--qr-boundary-01--

@@ -6,6 +6,7 @@
 import { analyze, analyzeLink } from "./analyze.js";
 import { parseMessage } from "./mail.js";
 import { enrich } from "./online.js";
+import { applyQr, scanQr } from "./qr.js";
 import { canFollowShorteners, getSettings, hasShortenerPermission, requestShortenerPermission, saveSettings } from "./settings.js";
 
 const MAX_SIZE = 15 * 1024 * 1024;
@@ -169,8 +170,9 @@ function renderAttachments(attachments) {
 function show(input) {
   showError("");
   let result;
+  let message;
   try {
-    const message = parseMessage(input);
+    message = parseMessage(input);
     if (!message.headers.list.length) {
       showError("Eso no parece un correo: no encuentro ninguna cabecera (From, Subject, Received...).");
       return;
@@ -187,10 +189,21 @@ function show(input) {
   renderLinks(result.links);
   renderAttachments(result.attachments);
   showResult(true);
-  addOnline(result, (r) => {
+  const rerender = (r) => {
     renderVerdict(r);
     renderFindings(r.findings);
-  });
+    renderLinks(r.links);
+  };
+  const shown = ++onlineTicket;
+  scanQr(message).then(
+    (scan) => {
+      if (shown !== onlineTicket) return;
+      const withQr = applyQr(result, scan);
+      if (withQr !== result) rerender(withQr);
+      addOnline(withQr, rerender);
+    },
+    () => shown === onlineTicket && addOnline(result, rerender),
+  );
 }
 
 /** Un enlace suelto: el mismo resultado, sin las partes que solo tienen sentido en un correo. */
