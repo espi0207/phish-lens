@@ -179,7 +179,8 @@ function checkLinks(links, recipientDomains, add) {
   for (const { href, text } of links) {
     let url;
     try {
-      url = new URL(href);
+      // «//dominio/ruta» va al mismo protocolo que la página: en un correo, a https.
+      url = new URL(href.startsWith("//") ? `https:${href}` : href);
     } catch {
       continue;
     }
@@ -190,7 +191,11 @@ function checkLinks(links, recipientDomains, add) {
       problems.push("ejecuta código o contiene una página entera");
       once(`proto:${url.protocol}`, "alta", `Enlace de tipo ${url.protocol}`, `Un enlace así no lleva a una web: ejecuta código o carga una página escondida dentro del propio correo.`);
     }
-    if (!host) continue;
+    if (!host) {
+      // Sin dominio no hay más que mirar, pero si ya es peligroso tiene que salir en la lista.
+      if (problems.length) results.push({ href, shown: shown.slice(0, 120), text, host: "", problems });
+      continue;
+    }
     if (url.username || url.password) {
       problems.push("truco de la @");
       once(`at:${host}`, "alta", "Enlace con una @ para engañar",
@@ -293,12 +298,17 @@ export function analyze(message, now = new Date()) {
   const auth = parseAuthResults(h);
   const hops = parseReceived(h.getAll("received"));
   const body = [message.text, htmlToText(message.html)].join("\n");
-  // El mismo enlace suele venir en la parte de texto y en la HTML: se queda el que tenga texto visible.
+  // El mismo enlace suele venir en la parte de texto y en la HTML: los repetidos sin texto
+  // sobran, pero cada texto distinto se mira. Si no, un primer «Visitar» escondía un segundo
+  // enlace al mismo sitio que dice «paypal.com».
   const byHref = new Map();
   for (const link of [...linksFromHtml(message.html), ...linksFromText(message.text)]) {
-    if (!byHref.has(link.href) || (!byHref.get(link.href).text && link.text)) byHref.set(link.href, link);
+    const texts = byHref.get(link.href) ?? new Map();
+    byHref.set(link.href, texts);
+    if (!texts.has(link.text)) texts.set(link.text, link);
   }
-  const unique = [...byHref.values()];
+  const unique = [...byHref.values()].flatMap((texts) =>
+    texts.size > 1 ? [...texts.values()].filter((l) => l.text) : [...texts.values()]);
 
   checkAuthentication(auth, from, add);
   checkSender(from, replyTo, returnPath, recipientDomains, add);

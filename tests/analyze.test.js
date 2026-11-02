@@ -164,3 +164,24 @@ test("ejemplo: devolución falsa de la Seguridad Social en catalán", () => {
   assert.ok(titles(r).includes("alta: Se hace pasar por la Seguridad Social"));
   assert.ok(titles(r).some((t) => /frase típica|Presiona|Mete prisa/.test(t)));
 });
+
+// Fallos encontrados en la revisión con Codex.
+
+function htmlMail(html) {
+  return mail(["From: Tienda <hola@tienda.example>", "To: ana@empresa.example", "Subject: Aviso", "Content-Type: text/html"], html);
+}
+
+test("dos enlaces al mismo sitio: el segundo con texto engañoso también cuenta", () => {
+  const result = htmlMail('<a href="https://evil.example">Visitar</a> y <a href="https://evil.example">paypal.com</a>');
+  assert.ok(titles(result).includes("alta: El texto de un enlace no coincide con su destino"));
+});
+
+test("un enlace //dominio (sin https:) también se analiza", () => {
+  const result = htmlMail('<a href="//192.0.2.7/login">Entrar</a>');
+  assert.ok(titles(result).includes("alta: Enlace a una dirección IP"));
+});
+
+test("un enlace javascript: suelto se puntúa como peligroso, no como «no es una URL»", () => {
+  const result = analyzeLink("javascript:alert(1)");
+  assert.ok(result && result.verdict.level === "peligro");
+});
