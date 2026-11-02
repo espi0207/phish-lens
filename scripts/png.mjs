@@ -42,8 +42,17 @@ export function decodePng(bytes) {
   const bitsPerPixel = CHANNELS[color] * depth;
   const bytesPerPixel = Math.max(1, bitsPerPixel >> 3);
   const stride = Math.ceil((width * bitsPerPixel) / 8);
-  const raw = inflateSync(Buffer.concat(idat));
-  if (raw.length < (stride + 1) * height) throw new Error("PNG truncado");
+  // Se descomprime como mucho lo que ocupa la imagen que dice ser: si no, unos pocos KB de
+  // ceros comprimidos (una «bomba de descompresión») se convertirían en gigas en memoria.
+  const expected = (stride + 1) * height;
+  let raw;
+  try {
+    raw = inflateSync(Buffer.concat(idat), { maxOutputLength: expected });
+  } catch (err) {
+    if (err.code === "ERR_BUFFER_TOO_LARGE") throw new Error("PNG con más datos de los que caben en la imagen");
+    throw err;
+  }
+  if (raw.length < expected) throw new Error("PNG truncado");
 
   const rows = Buffer.alloc(stride * height);
   for (let y = 0; y < height; y++) {
