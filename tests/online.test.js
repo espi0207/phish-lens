@@ -169,3 +169,49 @@ test("la lista negra se consulta por el host completo, no solo por el dominio re
   assert.equal(r.verdict.level, "peligro");
   assert.deepEqual(r.online.domains, ["testcategory.com"]);
 });
+
+// Fallos encontrados en la revisión con Codex.
+
+const authMail = (auth) =>
+  analyze(parseMessage([
+    "From: Tienda <billing@shop.example>",
+    "To: ana@empresa.example",
+    `Authentication-Results: mx.empresa.example; ${auth}`,
+    "Subject: Factura",
+    "",
+    "Hola",
+  ].join("\n")), NOW);
+
+test("un DNS que falla (SERVFAIL) no se toma como «no publica SPF»", async () => {
+  const fetchFn = fakeFetch([["dns", json({ Status: 2 })], ["rdap", json({}, 404)]]);
+  const r = await enrich(authMail("spf=pass smtp.mailfrom=shop.example; dmarc=pass header.from=shop.example"), { fetch: fetchFn, now: NOW, cache: new Map() });
+  assert.ok(!titles(r).some((t) => /no publica (SPF|DMARC)/.test(t)));
+  assert.ok(titles(r).includes("info: No se pudo comprobar SPF y DMARC"));
+});
+
+test("el SPF se mira en el dominio del sobre (smtp.mailfrom), no en el del From", async () => {
+  const fetchFn = fakeFetch([
+    ["name=mailer.example&type=TXT", txt('"v=spf1 include:_spf.mailer.example -all"')],
+    ["name=_dmarc", txt('"v=DMARC1; p=reject"')],
+    ["name=shop.example&type=TXT", txt()],
+  ]);
+  const auth = { spf: "pass", dmarc: "pass", domains: { spf: "mailer.example", dmarc: "shop.example" } };
+  const findings = await checkAuthDns("shop.example", auth, fetchFn);
+  assert.deepEqual(findings, []);
+});
+
+test("lo que se guarda en caché no depende de lo que diga cada correo", async () => {
+  const cache = new Map();
+  const fetchFn = fakeFetch([["dns", txt()], ["rdap", json({}, 404)]]);
+  await enrich(authMail("spf=none; dmarc=none"), { fetch: fetchFn, now: NOW, cache });
+  const second = await enrich(authMail("spf=pass smtp.mailfrom=shop.example; dmarc=pass header.from=shop.example"), { fetch: fetchFn, now: NOW, cache });
+  assert.ok(titles(second).includes("media: La cabecera dice SPF correcto, pero el dominio no publica SPF"));
+});
+
+test("muchos subdominios de un mismo sitio no disparan cien consultas", async () => {
+  const links = Array.from({ length: 100 }, (_, i) => `<a href="https://s${i}.trampa.example/">x</a>`).join("");
+  const result = analyze(parseMessage(["From: a@remite.example", "To: b@empresa.example", "Content-Type: text/html", "", links].join("\n")), NOW);
+  const fetchFn = fakeFetch([["dns", txt()], ["rdap", json({}, 404)]]);
+  await enrich(result, { fetch: fetchFn, now: NOW, cache: new Map() });
+  assert.ok(fetchFn.calls.length <= 30, `${fetchFn.calls.length} consultas`);
+});
