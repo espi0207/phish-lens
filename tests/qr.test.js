@@ -93,3 +93,33 @@ test("mail.js guarda solo las imágenes, con tope", () => {
   assert.equal(m.images.length, 10);
   assert.ok(m.images.every((i) => i.data instanceof Uint8Array && i.contentType === "image/png"));
 });
+
+test("un PNG pequeño con datos que se descomprimen en gigas no llena la memoria", async () => {
+  const { deflateSync, crc32 } = await import("node:zlib");
+  const chunk = (type, body) => {
+    const head = Buffer.alloc(8);
+    head.writeUInt32BE(body.length, 0);
+    head.write(type, 4, "latin1");
+    const crc = Buffer.alloc(4);
+    crc.writeUInt32BE(crc32 ? crc32(Buffer.concat([Buffer.from(type, "latin1"), body])) : 0, 0);
+    return Buffer.concat([head, body, crc]);
+  };
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(1, 0); // 1×1 píxel...
+  ihdr.writeUInt32BE(1, 4);
+  ihdr[8] = 8;
+  ihdr[9] = 0;
+  // ...pero con 200 MB de ceros comprimidos detrás (ocupan unos 200 KB).
+  const bomb = deflateSync(Buffer.alloc(200 * 1024 * 1024));
+  const png = Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    chunk("IHDR", ihdr), chunk("IDAT", bomb), chunk("IEND", Buffer.alloc(0)),
+  ]);
+  const before = process.memoryUsage().rss;
+  try {
+    decodePng(png);
+  } catch {
+    // vale que lo rechace
+  }
+  assert.ok(process.memoryUsage().rss - before < 100 * 1024 * 1024);
+});
