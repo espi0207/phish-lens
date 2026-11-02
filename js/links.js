@@ -27,19 +27,63 @@ function stripTags(html) {
   return decodeEntities(html.replace(/<[^>]*>/g, " ")).replace(/\s+/g, " ").trim();
 }
 
-const A_TAG = /<a\b([^>]*)>([\s\S]*?)<\/a\s*>/gi;
-const HREF = /\bhref\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/i;
 const PLAIN_URL = /\bhttps?:\/\/[^\s<>"'()]+/gi;
+// Dónde empieza una <a> y dónde se acaba su texto: en el </a> o en la <a> siguiente (como
+// hace el navegador con un enlace sin cerrar).
+const A_START = /<a(?=[\s/>])/gi;
+const A_END = /<\/a\s*>|<a(?=[\s/>])/gi;
+// Un atributo: nombre y, si tiene, valor entre comillas dobles, simples o sin comillas.
+const ATTR = /([^\s"'>/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g;
 
-/** Enlaces de la parte HTML: [{ href, text }] */
+/** Dónde se cierra la etiqueta que empieza en `from`: el primer > que no va entre comillas. */
+function tagEnd(html, from) {
+  let quote = "";
+  for (let i = from; i < html.length; i++) {
+    const c = html[i];
+    if (quote) {
+      if (c === quote) quote = "";
+    } else if (c === '"' || c === "'") {
+      quote = c;
+    } else if (c === ">") {
+      return i;
+    }
+  }
+  return -1;
+}
+
+/** El valor del atributo href (el primero, como el navegador), o null. */
+function hrefOf(attrs) {
+  for (const [, name, dq, sq, bare] of attrs.matchAll(ATTR)) {
+    if (name.toLowerCase() === "href") return dq ?? sq ?? bare ?? "";
+  }
+  return null;
+}
+
+/**
+ * Enlaces de la parte HTML: [{ href, text }]
+ *
+ * De una sola pasada y leyendo los atributos de verdad. Antes era una expresión regular:
+ * «\bhref» también encajaba con «data-href» (el atacante pone ahí el enlace bueno y en
+ * href el malo), un «>» entre comillas cortaba la etiqueta, un enlace sin cerrar no
+ * contaba y muchas <a> sin cerrar tardaban en proporción al cuadrado del tamaño.
+ */
 export function linksFromHtml(html) {
   const links = [];
-  for (const [, attrs, inner] of html.matchAll(A_TAG)) {
-    const m = attrs.match(HREF);
-    if (!m) continue;
-    const href = decodeEntities(m[1] ?? m[2] ?? m[3]).trim();
+  A_START.lastIndex = 0;
+  let start;
+  while ((start = A_START.exec(html))) {
+    const close = tagEnd(html, start.index + 2);
+    if (close < 0) break;
+    A_END.lastIndex = close + 1;
+    const end = A_END.exec(html);
+    const innerEnd = end ? end.index : html.length;
+    // La siguiente búsqueda sigue donde acaba esta: si acaba en otra <a>, esa es la siguiente.
+    A_START.lastIndex = end && end[0][1] !== "/" ? end.index : end ? A_END.lastIndex : html.length;
+    const raw = hrefOf(html.slice(start.index + 2, close));
+    if (raw === null) continue;
+    const href = decodeEntities(raw).trim();
     if (!href || href.startsWith("#") || href.toLowerCase().startsWith("mailto:")) continue;
-    links.push({ href, text: stripTags(inner) });
+    links.push({ href, text: stripTags(html.slice(close + 1, innerEnd)) });
   }
   return links;
 }
