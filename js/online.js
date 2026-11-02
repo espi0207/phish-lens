@@ -8,6 +8,7 @@ import { BRANDS, defang, isIpAddress, registrableDomain } from "./domains.js";
 const DAY = 24 * 3600 * 1000;
 const TIMEOUT = 6000;
 const MAX_DOMAINS = 10;
+const MAX_HOSTS = 15;
 const MAX_SHORTENERS = 5;
 const DOH = "https://cloudflare-dns.com/dns-query";
 const DOH_SECURITY = "https://security.cloudflare-dns.com/dns-query";
@@ -36,6 +37,11 @@ async function getJson(fetchFn, url, accept) {
 /** Una consulta DNS por HTTPS. `status` 3 es que el dominio no existe. */
 export async function dnsQuery(name, type, fetchFn, endpoint = DOH) {
   const json = await getJson(fetchFn, `${endpoint}?name=${encodeURIComponent(name)}&type=${type}`, "application/dns-json");
+  // 0 es que ha contestado y 3 que no existe. Lo demás (2 = SERVFAIL, 5 = REFUSED…) es que no
+  // se sabe: si se tomara como «no hay registros», saldría un «no publica SPF» que no es verdad.
+  if (json.Status !== 0 && json.Status !== 3) {
+    throw new Error(`el DNS no ha podido contestar por ${name} (código ${json.Status})`);
+  }
   const answers = (json.Answer ?? []).filter((a) => a.type === RECORD[type]).map((a) => a.data);
   return { status: json.Status, answers };
 }
@@ -76,9 +82,13 @@ function ageFinding(domain, registered, now) {
 export async function checkAuthDns(domain, auth, fetchFn) {
   const findings = [];
   const org = registrableDomain(domain);
-  const [txt, dmarcExact] = await Promise.all([
+  // El SPF es del dominio del sobre (smtp.mailfrom), que en muchos envíos (boletines, facturas)
+  // es el del servicio que los manda y no el del From. DMARC sí va con el del From.
+  const spfDomain = auth.domains?.spf && auth.domains.spf !== domain ? auth.domains.spf : domain;
+  const [txt, dmarcExact, spfTxt] = await Promise.all([
     dnsQuery(domain, "TXT", fetchFn),
     dnsQuery(`_dmarc.${domain}`, "TXT", fetchFn),
+    spfDomain === domain ? null : dnsQuery(spfDomain, "TXT", fetchFn),
   ]);
   if (txt.status === 3) {
     return [{
@@ -91,20 +101,20 @@ export async function checkAuthDns(domain, auth, fetchFn) {
   if (!dmarcExact.answers.some((t) => /^v=DMARC1/i.test(joinTxt(t))) && org !== domain) {
     dmarcTxt = await dnsQuery(`_dmarc.${org}`, "TXT", fetchFn);
   }
-  const spf = txt.answers.map(joinTxt).find((t) => /^v=spf1\b/i.test(t));
+  const spf = (spfTxt ?? txt).answers.map(joinTxt).find((t) => /^v=spf1\b/i.test(t));
   const dmarc = dmarcTxt.answers.map(joinTxt).find((t) => /^v=DMARC1\b/i.test(t));
 
   if (!spf) {
     findings.push(auth.spf === "pass"
       ? { severity: "media", title: "La cabecera dice SPF correcto, pero el dominio no publica SPF",
-          detail: `En el DNS de ${domain} no hay registro SPF: esa línea de la cabecera no cuadra y puede estar falsificada.` }
-      : { severity: "baja", title: `${domain} no publica SPF`,
+          detail: `En el DNS de ${spfDomain} no hay registro SPF: esa línea de la cabecera no cuadra y puede estar falsificada.` }
+      : { severity: "baja", title: `${spfDomain} no publica SPF`,
           detail: "Sin SPF, cualquiera puede enviar correo diciendo ser de ese dominio sin que el receptor lo detecte." });
   } else if (/\s\+all\b/i.test(spf) || /\sall\s*$/i.test(spf)) {
-    findings.push({ severity: "alta", title: `El SPF de ${domain} deja enviar a cualquiera`,
+    findings.push({ severity: "alta", title: `El SPF de ${spfDomain} deja enviar a cualquiera`,
       detail: `Su registro (${spf}) termina en "+all": autoriza a todo el mundo a enviar en su nombre.` });
   } else if (/\s\?all\b/i.test(spf)) {
-    findings.push({ severity: "baja", title: `El SPF de ${domain} no dice nada (?all)`,
+    findings.push({ severity: "baja", title: `El SPF de ${spfDomain} no dice nada (?all)`,
       detail: "Publica SPF pero sin postura: no rechaza ni marca a los servidores no autorizados." });
   }
 
@@ -172,6 +182,8 @@ function targets(result, extraHosts) {
     const domain = registrableDomain(ascii);
     if (!domain || OFFICIAL.has(domain) || FREE_MAIL.has(domain) || recipients.has(domain)) continue;
     if (domains.size >= MAX_DOMAINS && !domains.has(domain)) continue;
+    // El tope también para los nombres completos: cien subdominios de un mismo sitio eran cien consultas.
+    if (hosts.size >= MAX_HOSTS && !hosts.has(ascii)) continue;
     domains.add(domain);
     hosts.add(ascii);
   }
@@ -247,7 +259,9 @@ export async function enrich(result, { fetch: fetchFn = globalThis.fetch, now = 
     const sender = registrableDomain(result.from.domain);
     if (!OFFICIAL.has(sender) && !FREE_MAIL.has(sender)) {
       await attempt("dns", result.from.domain, async () => {
-        added.push(...(await cached(cache, `auth:${result.from.domain}`, () => checkAuthDns(result.from.domain, result.auth, fetchFn))));
+        // La clave lleva lo que dice la cabecera: los avisos dependen de cada correo, no solo del dominio.
+        const key = `auth:${result.from.domain}:${result.auth.spf}:${result.auth.dmarc}:${result.auth.domains?.spf ?? ""}`;
+        added.push(...(await cached(cache, key, () => checkAuthDns(result.from.domain, result.auth, fetchFn))));
       });
     }
   }
