@@ -185,3 +185,11 @@ test("un enlace javascript: suelto se puntúa como peligroso, no como «no es un
   const result = analyzeLink("javascript:alert(1)");
   assert.ok(result && result.verdict.level === "peligro");
 });
+
+test("ejemplo: órdenes escondidas para la IA y letras cirílicas", () => {
+  const r = sample("ia-escondida");
+  assert.equal(r.verdict.level, "peligro");
+  const t = titles(r);
+  assert.ok(t.includes("alta: Instrucciones escondidas para asistentes de IA"));
+  assert.ok(t.includes("alta: Letras de otro alfabeto que se hacen pasar por latinas"));
+});

@@ -183,9 +183,17 @@ function parsePart(binary, depth, out) {
   else if (encoding === "quoted-printable") content = decodeQuotedPrintable(body);
 
   const filename = disposition.params.filename || type.params.name || "";
-  const isAttachment = disposition.value === "attachment" || (filename && !type.value.startsWith("text/"));
+  // Con nombre es un adjunto aunque diga «inline» o sea text/html: «factura.pdf.html» marcado
+  // como inline no se enseña como cuerpo, se descarga y se abre como página.
+  const isAttachment = disposition.value === "attachment" || Boolean(filename);
   if (isAttachment || (!type.value.startsWith("text/") && !type.value.startsWith("message/"))) {
-    out.attachments.push({ filename, contentType: type.value, size: content.length });
+    out.attachments.push({
+      filename,
+      contentType: type.value,
+      size: content.length,
+      disposition: disposition.value || "ninguna",
+      head: content.slice(0, 4), // los primeros bytes dicen qué es de verdad («MZ» = programa de Windows)
+    });
     if (IMAGE_TYPES.test(type.value) && content.length <= MAX_IMAGE_BYTES && out.images.length < MAX_IMAGES) {
       out.images.push({ filename, contentType: type.value, data: Uint8Array.from(content, (c) => c.charCodeAt(0)) });
     }

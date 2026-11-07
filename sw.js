@@ -26,6 +26,7 @@ const FILES = [
   "samples/dgt-multa.eml",
   "samples/factura-adjunto.eml",
   "samples/fraude-ceo.eml",
+  "samples/ia-escondida.eml",
   "samples/pedido-legitimo.eml",
   "samples/qr-paypal.eml",
   "samples/seg-social-catala.eml",
