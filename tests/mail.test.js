@@ -66,7 +66,9 @@ test("multipart con texto, HTML y adjunto", () => {
   assert.equal(msg.headers.get("from"), "José <jose@ejemplo.example>");
   assert.equal(msg.text, "Hola, señor, esta línea sigue");
   assert.equal(msg.html, '<a href="https://x.example">clic</a>');
-  assert.deepEqual(msg.attachments, [{ filename: "factura.pdf.exe", contentType: "application/octet-stream", size: 12 }]);
+  assert.deepEqual(msg.attachments, [
+    { filename: "factura.pdf.exe", contentType: "application/octet-stream", size: 12, disposition: "attachment", head: "MZ\x90\x00" },
+  ]);
 });
 
 test("un correo con multiparts anidados sin fin no cuelga la página", () => {

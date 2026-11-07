@@ -238,6 +238,11 @@ function checkAttachments(attachments, add) {
       add("alta", "Adjunto con el nombre dado la vuelta",
         `"${name}" usa un carácter invisible que invierte el texto para esconder la extensión real.`);
     }
+    if (att.head?.startsWith("MZ") && kind !== "ejecutable") {
+      problems.push("programa disfrazado");
+      add("alta", `El adjunto ${name} es un programa`,
+        `Se llama .${ext || "(sin extensión)"}, pero por dentro es un programa de Windows (empieza por «MZ»).`);
+    }
     if (kind) {
       problems.push(kind);
       const double = DOCUMENT_LOOK.includes(extension(name, 2));
@@ -252,6 +257,79 @@ function checkAttachments(attachments, add) {
     }
     return { ...att, name, problems };
   });
+}
+
+// Órdenes para los asistentes de IA que leen el correo (Copilot, Gemini…): se esconden
+// donde la persona no las ve, para que el asistente haga algo al resumirlo.
+const AI_INJECTION = [
+  /ignore (all |any )?(the )?(previous|prior|above|earlier) (instructions|prompts?)/,
+  /ignora (todas )?(las )?instrucciones (anteriores|previas)/,
+  /\b(you are|act as) (an? )?(ai|llm|language model|ai assistant|copilot|gemini|claude|chatgpt)\b/,
+  /\b(ai|llm) (assistant|agent)s?\b.{0,40}(must|should|ignore|forward|send|reply|do not)/,
+  /\basistente(s)? de (ia|inteligencia artificial)\b.{0,60}(ignora|reenvia|envia|no (se lo )?(digas|menciones|informes))/,
+  /\bsystem prompt\b/,
+  /do not (tell|mention|inform|alert) the user/,
+  /no (se lo )?(digas|menciones|informes|avises) al usuario/,
+];
+// Pedir que se reenvíen correos o archivos es normal en un correo; escondido, no.
+const HIDDEN_EXFIL = [
+  /(forward|send|export) (all|every) (the )?(emails?|messages?|files?|contacts?|passwords?)/,
+  /(reenvia|envia|exporta) todos (los )?(correos|mensajes|archivos|contactos|contrasenas)/,
+];
+const HIDDEN_STYLE =
+  /<([a-z0-9]+)\b[^>]*\bstyle\s*=\s*("[^"]*"|'[^']*')[^>]*>([\s\S]*?)<\/\1\s*>/gi;
+const HIDING = /display\s*:\s*none|visibility\s*:\s*hidden|font-size\s*:\s*0(?![.\d]*[1-9])|opacity\s*:\s*0(?![.\d]*[1-9])/i;
+const ZERO_WIDTH = /[\u200B\u200C\u2060\u180E]|(?!^)\uFEFF/g;
+const LATIN = /[a-z]/i;
+const LOOKALIKE_SCRIPT = /[\u0370-\u03FF\u0400-\u04FF]/;
+
+function hiddenParts(html) {
+  const comments = [...html.matchAll(/<!--([\s\S]*?)-->/g)].map((m) => m[1]);
+  const hidden = [];
+  for (const m of html.matchAll(HIDDEN_STYLE)) {
+    if (HIDING.test(m[2])) hidden.push(htmlToText(m[3]));
+  }
+  return { comments, hidden };
+}
+
+function checkHidden(subject, fromName, text, html, add) {
+  const { comments, hidden } = hiddenParts(html);
+  const hiddenText = hidden.join(" ").replace(/\s+/g, " ").trim();
+  const places = [
+    ["un comentario del HTML", comments.join("\n")],
+    ["texto escondido con CSS", hiddenText],
+    ["el propio texto", `${subject}\n${text}\n${htmlToText(html)}`],
+  ];
+  for (const [where, content] of places) {
+    const clean = normalize(content);
+    const patterns = where === "el propio texto" ? AI_INJECTION : [...AI_INJECTION, ...HIDDEN_EXFIL];
+    if (patterns.some((re) => re.test(clean))) {
+      add("alta", "Instrucciones escondidas para asistentes de IA",
+        `Hay órdenes dirigidas a un asistente (Copilot, Gemini, ChatGPT…) en ${where}. Buscan que, al resumir o ` +
+          "contestar el correo, el asistente haga algo por su cuenta: reenviar datos, ocultar avisos o abrir un enlace.");
+      break;
+    }
+  }
+  // Una línea de vista previa oculta es normal en los boletines; un párrafo entero, no.
+  if (hiddenText.length >= 200) {
+    add("baja", "Texto escondido en el HTML",
+      `${hiddenText.length} caracteres que no se ven (display:none, tamaño 0...). Se usa para engañar a los filtros de spam.`);
+  }
+  const zeroWidth = `${subject}${text}${html}`.match(ZERO_WIDTH)?.length ?? 0;
+  if (zeroWidth >= 3) {
+    add("media", "Caracteres invisibles metidos en el texto",
+      `${zeroWidth} caracteres de ancho cero: se meten entre las letras para que los filtros no reconozcan palabras como «contraseña».`);
+  }
+  const mixed = `${subject} ${fromName}`.split(/[\s.,:;!?()"«»]+/).find(
+    (word) => LATIN.test(word) && LOOKALIKE_SCRIPT.test(word));
+  if (mixed) {
+    add("alta", "Letras de otro alfabeto que se hacen pasar por latinas",
+      `«${mixed}» mezcla letras latinas con cirílicas o griegas que se ven iguales: es para que un filtro no reconozca la palabra.`);
+  }
+  if (/<form\b/i.test(html) && /<input\b[^>]*type\s*=\s*["']?password/i.test(html)) {
+    add("alta", "El correo trae un formulario que pide la contraseña",
+      "Ningún servicio de verdad te pide la contraseña dentro de un correo: lo que escribas iría a quien lo envió.");
+  }
 }
 
 function checkContent(subject, body, add) {
@@ -315,6 +393,7 @@ export function analyze(message, now = new Date()) {
   const links = checkLinks(unique, recipientDomains, add);
   const attachments = checkAttachments(message.attachments, add);
   checkContent(subject, body, add);
+  checkHidden(subject ?? "", from.name ?? "", message.text, message.html, add);
   checkHops(hops, add);
   if (date && !isNaN(date) && date - now > 24 * 3600 * 1000) {
     add("baja", "La fecha del correo está en el futuro", "La cabecera Date la pone quien envía: puede ser cualquier cosa.");

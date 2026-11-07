@@ -137,11 +137,12 @@ ejecutarse como fórmula al abrirlo en Excel).
 
 ## Ejemplos
 
-Hay cuatro correos de ejemplo para probarlo sin tener uno a mano:
+Hay varios correos de ejemplo para probarlo sin tener uno a mano:
 
 - [Paquete retenido](https://espi0207.github.io/phish-lens/#ejemplo=correos-paquete): el típico de "pague las tasas de aduana", con enlaces que dicen correos.es y llevan a otra parte.
 - [Fraude del CEO](https://espi0207.github.io/phish-lens/#ejemplo=fraude-ceo): la "directora" pide una transferencia urgente desde un dominio casi igual al de la empresa. Pasa SPF, DKIM y DMARC, y aun así es una estafa.
 - [Factura con adjunto](https://espi0207.github.io/phish-lens/#ejemplo=factura-adjunto): `Factura_2026-0917.pdf.html`, una página web disfrazada de PDF.
+- [Órdenes para la IA](https://espi0207.github.io/phish-lens/#ejemplo=ia-escondida): un aviso de "buzón lleno" con letras cirílicas en «Microsoft» y órdenes escondidas para el asistente de IA que resuma el correo.
 - [Correo legítimo](https://espi0207.github.io/phish-lens/#ejemplo=pedido-legitimo): para ver que no todo sale en rojo.
 
 Están en `samples/` y todos los dominios son `.example`, que está reservado y no es de
@@ -174,7 +175,23 @@ sin querer.
 
 **Adjuntos**: ejecutables, scripts, páginas web (`.html`, `.svg`), documentos con macros,
 imágenes de disco (`.iso`, `.img`), dobles extensiones (`factura.pdf.exe`) y nombres
-dados la vuelta con el carácter U+202E.
+dados la vuelta con el carácter U+202E. También un adjunto que se llama `.pdf` y por
+dentro es un programa de Windows (empieza por `MZ`), y los que llevan nombre aunque
+vengan marcados como `inline` (un `factura.pdf.html` así antes se tomaba por el cuerpo).
+
+**Lo que el correo esconde**:
+
+- Órdenes para los asistentes de IA que leen el correo (Copilot, Gemini, ChatGPT…):
+  "ignore previous instructions", "no se lo digas al usuario", "send all contacts to…",
+  en comentarios del HTML, en texto oculto con CSS o a la vista. Pedir que se reenvíen
+  correos solo cuenta si está escondido; en un correo normal es lo más corriente.
+- Letras cirílicas o griegas mezcladas con latinas en el asunto o el nombre
+  (`Micrоsoft` con una "о" rusa), que también despistan a la comprobación de marcas.
+- Caracteres de ancho cero metidos entre las letras, para que un filtro no lea
+  "contraseña".
+- Párrafos enteros escondidos con CSS (la línea de vista previa oculta de los boletines
+  no cuenta).
+- Un formulario que pide la contraseña dentro del propio correo.
 
 **El texto**: frases de manual ("48 horas", "no puedo hablar", "es confidencial",
 "verifique su cuenta"...). Una sola no dice nada; tres juntas, bastante.
